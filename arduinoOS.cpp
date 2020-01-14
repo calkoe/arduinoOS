@@ -4,15 +4,14 @@ String aos_name{"arduinoOS"};
 
 //Global
 void ArduinoOS::begin(HardwareSerial& Serial,unsigned int baud){
-    addVariable("sys/name", aos_name, "Hostname of this System",false, false);
+    addVariable("sys/name", aos_name, "Hostname",false, false);
     arduinoOS_default.begin();
     //Begin
     _begin      = true;
     _Serial     = &Serial;
-    _SerialBaud = baud;
     _Serial->begin(baud);
     #if defined ESP8266 || defined ESP32 
-        EEPROM.begin(1024);
+        EEPROM.begin(EEPROM_SIZE);
     #endif
     terminalWelcome();
 };
@@ -23,14 +22,6 @@ void ArduinoOS::loop(){
             charIn(Serial.read());
         delay(5);
     }
-
-    //Check Connection
-    /*if((unsigned long)(millis()-timer1)>=500&&(timer1=millis())){
-        if(terminalConnectedIdle != terminalConnected)terminalWelcome();
-        terminalConnected = terminalConnectedIdle;
-        terminalConnectedIdle = false;
-        o("\33[5n",false,true); //Request: Device status report
-    }*/
 };
 
 //Commands
@@ -85,10 +76,7 @@ bool ArduinoOS::addVariable(char* n,int& v,char* d,bool h,bool p)   {return _add
 bool ArduinoOS::addVariable(char* n,double& v,char* d,bool h,bool p){return _addVariable(n,&v,d,h,p,AOS_DT_DOUBLE);};
 bool ArduinoOS::addVariable(char* n,String& v,char* d,bool h,bool p){return _addVariable(n,&v,d,h,p,AOS_DT_STRING);};
 bool ArduinoOS::_addVariable(char* name,void* value,char* description,bool hidden,bool protect,AOS_DT aos_dt){
-    if(_begin){
-        o(textErrorBegin);
-        return false;
-    }
+    if(_begin){o(textErrorBegin);return false;}
     AOS_VAR* b = new AOS_VAR{name,value,description,hidden,protect,aos_dt,nullptr};
     if(aos_var == nullptr){
         aos_var = b;
@@ -106,9 +94,9 @@ void ArduinoOS::listVariables(){
     AOS_VAR* i{aos_var};
     while(i != nullptr){
         if(!i->hidden){ 
-            if(i->aos_dt==AOS_DT_INT)    snprintf(charOutBuffer,LONG,"%20s : %d %20s %s", i->name,*(int*)(i->value),i->description,(i->protect ? "(Protected)":""));
-            if(i->aos_dt==AOS_DT_DOUBLE) {char str_temp[SHORT];dtostrf(*(double*)(i->value), 4, 2, str_temp);snprintf(charOutBuffer,LONG,"%20s : %s %20s %s", i->name,str_temp,i->description,(i->protect ? "(Protected)":""));};
-            if(i->aos_dt==AOS_DT_STRING) snprintf(charOutBuffer,LONG,"%20s : %s %20s %s", i->name,(*(String*)(i->value)).c_str(),i->description,(i->protect ? "(Protected)":""));
+            if(i->aos_dt==AOS_DT_INT)    snprintf(charOutBuffer,LONG,"%20s : %12d\t\t%s %s", i->name,*(int*)(i->value),i->description,(i->protect ? "(Protected)":""));
+            if(i->aos_dt==AOS_DT_DOUBLE) {char str_temp[SHORT];dtostrf(*(double*)(i->value), 4, 2, str_temp);snprintf(charOutBuffer,LONG,"%20s : %12s\t\t%s %s", i->name,str_temp,i->description,(i->protect ? "(Protected)":""));};
+            if(i->aos_dt==AOS_DT_STRING) snprintf(charOutBuffer,LONG,"%20s : %12s\t\t%s %s", i->name,(*(String*)(i->value)).c_str(),i->description,(i->protect ? "(Protected)":""));
             o(charOutBuffer);
         }
         i = i->aos_var;
@@ -134,7 +122,7 @@ bool ArduinoOS::getVariable(char* name, char* b){
         if(strcmp(i->name,name)==0){
             if(i->aos_dt==AOS_DT_INT)    sprintf(b,"%d",*(int*)(i->value));
             if(i->aos_dt==AOS_DT_DOUBLE){char str_temp[SHORT];dtostrf(*(double*)(i->value), 4, 2, str_temp);sprintf(b,"%s",str_temp);};
-            if(i->aos_dt==AOS_DT_STRING) sprintf(b,"%d",(*(String*)(i->value)).c_str());
+            if(i->aos_dt==AOS_DT_STRING) sprintf(b,"%s",(*(String*)(i->value)).c_str());
             return true;
         }
         i = i->aos_var;
@@ -142,7 +130,7 @@ bool ArduinoOS::getVariable(char* name, char* b){
     return false;
 };
 void ArduinoOS::loadVariables(bool save){
-    AOS_VAR* i{aos_var};int p{0};
+    AOS_VAR* i{aos_var};unsigned int p{0};
     while(i != nullptr){
             if(i->aos_dt==AOS_DT_INT){
                 if(save)EEPROM.put(p,*(int*)(i->value));
@@ -171,10 +159,10 @@ void ArduinoOS::loadVariables(bool save){
             }
         i = i->aos_var;
     };
+    _usedEeprom = p;
     #if defined ESP8266 || defined ESP32 
         if(save) EEPROM.commit();
     #endif
-    snprintf(charOutBuffer,LONG,"Done! Using:  %d of %d Bytes from EEPROM.",p,EEPROM.length());o(charOutBuffer);
 };
 
 //Interface

@@ -12,25 +12,13 @@ void demo(char** param,uint8_t parCnt){
     }
 }
 
-
-
 void setup()
 {
-    
     aos.addVariable("demo/int",     demoInt);
     aos.addVariable("demo/double",  demoDouble);
-    aos.addVariable("wifi/string",  demoString, "This is a pretty Description!", false, false);
-
+    aos.addVariable("demo/string",  demoString, "This is a Demo String!", false, false);
     aos.addCommand("demo",demo,"demo [parm1] [parm2] - Runs the Demo Command",false);
-    aos.addCommand("demo2",demo,"demo [parm1] [parm2] - Runs the Demo Command",false);
-    aos.addCommand("demo3",demo,"demo [parm1] [parm2] - Runs the Demo Command",false);
-
     aos.begin(Serial);
-
-    delay(10);
-
-
-
 }
 
 void loop()

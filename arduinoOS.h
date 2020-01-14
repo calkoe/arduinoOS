@@ -2,8 +2,9 @@
 #include <arduino.h>
 #include <EEPROM.h>
 
+#define EEPROM_SIZE         1024        //Only for ESP
 #define SHORT               32          //Programm Parameter, Parameter Count
-#define LONG                64          //BufferIn, BufferOut, Terminal History
+#define LONG                64          //BufferIn, BufferOut, TerminalHistory
 
 class ArduinoOS{
     
@@ -30,7 +31,6 @@ class ArduinoOS{
 
         bool            _begin{false};
         HardwareSerial* _Serial;
-        unsigned int    _SerialBaud{0};
         bool            _SerialEcho{true};
         AOS_CMD*        aos_cmd{nullptr};
         AOS_VAR*        aos_var{nullptr};
@@ -40,23 +40,22 @@ class ArduinoOS{
         AOS_ESC         charInEsc{ESC_STATE_NONE};
         unsigned int    charInBufferPos{0};
         char            charOutBuffer[LONG];
-        
-        unsigned long   timer1{0};
         bool            terminalConnectedIdle = false;
         bool            terminalConnected     = false;
         char            terminalHistory[LONG];
-        
+
         bool            _addVariable(char*,void*,char*,bool,bool,AOS_DT);
         
     public:
 
-        //Storage
-        char* textErrorBegin{"addVariable() must be called before begin()"};
-        char* textWelcome{"Welcome to arduinOS V1.0"};
+        //TEXT
+        char* textErrorBegin{"call addVariable() before begin()"};
+        char* textWelcome{"ArduinOS V1.0"};
         char* textCommandNotFound{"Command not found! Try 'help' for more information."};
-        char* textInvalidParameter{"Invalid Parameter!"};
+        char* textInvalidParameter{"Invalid parameter!"};
 
         //Global
+        unsigned int _usedEeprom{0};
         void    begin(HardwareSerial&, unsigned int = 9600);
         void    loop();
 
