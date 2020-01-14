@@ -1,3 +1,12 @@
+//
+//  arduinoOS.h
+//  V1
+//
+//  Created by Calvin Köcher on 09.01.20.
+//  Copyright © 2020 Calvin Köcher. All rights reserved.
+//  https://github.com/calkoe/arduinoOS
+//
+
 #pragma once
 #include <arduino.h>
 #include <EEPROM.h>
