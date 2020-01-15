@@ -14,11 +14,13 @@ void demo(char** param,uint8_t parCnt){
 
 void setup()
 {
+
     aos.addVariable("demo/int",     demoInt);
     aos.addVariable("demo/double",  demoDouble);
     aos.addVariable("demo/string",  demoString, "This is a Demo String!", false, false);
     aos.addCommand("demo",demo,"demo [parm1] [parm2] - Runs the Demo Command",false);
     aos.begin(Serial);
+
 }
 
 void loop()

@@ -2,6 +2,6 @@
 #include <arduinoOS.h>
 class ArduinoOS_default{
     public:
-        void begin();
+        ArduinoOS_default();
 };
 extern ArduinoOS_default arduinoOS_default;

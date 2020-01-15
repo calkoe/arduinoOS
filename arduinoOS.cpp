@@ -1,14 +1,17 @@
 #include <arduinoOS.h>
 ArduinoOS aos;
+ArduinoOS_default arduinoOS_default;
 String aos_date{__DATE__ " " __TIME__};
 String aos_date_temp = aos_date;
 String aos_name{"arduinoOS"};
 
 //Global
+ArduinoOS::ArduinoOS(){
+    addVariable("sys/date", aos_date,NULL,true,false);
+    addVariable("sys/name", aos_name,NULL,false,false);
+}
 void ArduinoOS::begin(HardwareSerial& Serial,unsigned int baud){
     wdt_enable(WDTO_4S);
-    arduinoOS_default.begin();
-    //Begin
     _begin      = true;
     _Serial     = &Serial;
     _Serial->begin(baud);
@@ -82,7 +85,7 @@ bool ArduinoOS::addVariable(char* n,double& v,char* d,bool h,bool p){return _add
 bool ArduinoOS::addVariable(char* n,String& v,char* d,bool h,bool p){return _addVariable(n,&v,d,h,p,AOS_DT_STRING);};
 bool ArduinoOS::_addVariable(char* name,void* value,char* description,bool hidden,bool protect,AOS_DT aos_dt){
     if(_begin){
-        o(textErrorBegin);
+        p(textErrorBegin);
         return false;
     }
     AOS_VAR* b = new AOS_VAR{name,value,description,hidden,protect,aos_dt,nullptr};
@@ -179,16 +182,24 @@ void ArduinoOS::loadVariables(bool save){
 };
 
 //Interface
-void ArduinoOS::o(char c,bool nl, bool esc){
+void ArduinoOS::o(const char c,bool nl, bool esc){
     if(nl)  _Serial->println(c);    else    _Serial->print(c);
 };
-void ArduinoOS::o(char* ca,bool nl, bool esc){
+void ArduinoOS::o(const char* ca,bool nl, bool esc){
     if(nl)  _Serial->println(ca);   else    _Serial->print(ca);
+};
+void ArduinoOS::p(const char* ca,bool nl, bool esc){
+    char c;
+    for (unsigned int k = 0; k < strlen_P(ca); k++) {
+        c = pgm_read_byte_near(ca + k);
+        o(c,false,esc);
+    }o("",nl,esc);
 };
 void ArduinoOS::cl(){
     o("\33[2K",false,true);o(0x0D,false,true); //Clear Line
 }
 void ArduinoOS::charIn(char c){
+        static char charInBufferLast;
         if(charEsc(c)) return;
         if(c == 0x7F || c == 0x08){                                     //DEL BACKSPACE
             if(charInBufferPos > 0){
@@ -206,7 +217,7 @@ void ArduinoOS::charIn(char c){
             charInBuffer[charInBufferPos++] = c;
         }else{
             if(c == 0x0A && charInBufferLast == 0x0D || c == 0x0D && charInBufferLast == 0x0A) return;
-            o(0x0A,false,true);o(0x0D,false,true);                      //NL+CR
+            o("",true,true);
             if(charInBufferPos>0){
                 strcpy(terminalHistory,charInBuffer);
                 terminalParseCommand();
@@ -218,6 +229,7 @@ void ArduinoOS::charIn(char c){
     charInBufferLast = c;
 };
 bool ArduinoOS::charEsc(char c){
+    static AOS_ESC charInEsc{ESC_STATE_NONE};
     bool ret = false;
     if(c == 27){
         charInEsc = ESC_STATE_START;
@@ -240,7 +252,6 @@ bool ArduinoOS::charEsc(char c){
         }else if(c == 0x44){    // D    Cursor Left
             charInEsc = ESC_STATE_NONE;
         }else if(c == 0x30){    // 0    Response: terminal is OK 
-            terminalConnectedIdle = true;
         }else if(c == 0x6e){    // n    Escape Closing
             charInEsc = ESC_STATE_NONE;
         }
@@ -252,7 +263,7 @@ void ArduinoOS::clearBuffer(char* ca,unsigned int l){
     for(unsigned int i{0};i<l;i++)ca[i]=NULL;
 };
 void ArduinoOS::terminalWelcome(){
-    o(0x07,false,true);aos.o("\033[2J\033[1;1H");o(textWelcome);
+    o(0x07,false,true);aos.o("\033[2J\033[1;1H");p(textWelcome);
     aos.listCommands();
     snprintf(charOutBuffer,LONG,"%s:/>",aos_name.c_str());o(charOutBuffer,false);
 }
@@ -273,5 +284,5 @@ void ArduinoOS::terminalParseCommand(){
     char*   param[SHORT];
     char*   split = strtok(charInBuffer, " ");
     while(split){param[parCnt++] = split;split = strtok(NULL, " ");}
-    if(parCnt>0) if(!callCommand(param[0],param,parCnt)) o(textCommandNotFound);
+    if(parCnt>0) if(!callCommand(param[0],param,parCnt)) p(textCommandNotFound);
 };

@@ -16,8 +16,14 @@
 #define SHORT               32          //Programm Parameter, Parameter Count
 #define LONG                64          //BufferIn, BufferOut, TerminalHistory
 
-extern String aos_date;
-extern String aos_name;
+//Plugins
+#include <arduinoOS_default.h>
+
+//Text
+const char textErrorBegin[] PROGMEM         = "you have to call addVariable() before begin()";
+const char textWelcome[] PROGMEM            = "ArduinOS V1.0 - github.com/calkoe/arduinoOS";
+const char textCommandNotFound[] PROGMEM    = "Command not found! Try 'help' for more information.";
+const char textInvalidParameter[] PROGMEM   = "Invalid parameter! Try 'help' for more information.";
 
 class ArduinoOS{
     
@@ -49,30 +55,17 @@ class ArduinoOS{
         AOS_VAR*        aos_var{nullptr};
 
         char            charInBuffer[LONG];
-        char            charInBufferLast;
-        AOS_ESC         charInEsc{ESC_STATE_NONE};
         unsigned int    charInBufferPos{0};
         char            charOutBuffer[LONG];
-        bool            terminalConnectedIdle = false;
-        bool            terminalConnected     = false;
         char            terminalHistory[LONG];
 
         bool            _addVariable(char*,void*,char*,bool,bool,AOS_DT);
         
-    public:
-
-        //TEXT
-        char* textErrorBegin{"call addVariable() before begin()"};
-        char* textWelcome{"ArduinOS V1.0"};
-        char* textCommandNotFound{"Command not found! Try 'help' for more information."};
-        char* textInvalidParameter{"Invalid parameter!"};
+    public:   
 
         //Global
-        ArduinoOS(){
-            addVariable("sys/date", aos_date,NULL,true,false);
-            addVariable("sys/name", aos_name,NULL,false,false);
-        }
-        unsigned int _usedEeprom{0};
+        ArduinoOS();
+        signed int _usedEeprom{0};
         void    begin(HardwareSerial&, unsigned int = 9600);
         void    loop();
 
@@ -92,8 +85,9 @@ class ArduinoOS{
         void    loadVariables(bool = false);
 
         //Interface
-        void    o(char,bool=true,bool=false);
-        void    o(char*,bool=true,bool=false);
+        void    o(const char,bool=true,bool=false);
+        void    o(const char*,bool=true,bool=false);
+        void    p(const char*,bool=true,bool=false);
         void    cl();
 
         void    charIn(char);
@@ -105,4 +99,5 @@ class ArduinoOS{
 
 };
 extern ArduinoOS aos;
-#include <arduinoOS_default.h>
+extern String aos_date;
+extern String aos_name;

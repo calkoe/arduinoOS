@@ -1,5 +1,4 @@
 #include <arduinoOS_default.h>
-ArduinoOS_default arduinoOS_default;
 
 #ifdef __arm__
 // should use uinstd.h to define sbrk but Due causes a conflict
@@ -21,7 +20,7 @@ int freeMemory() {
 //Default Functions
 void aos_gpio(char** param,uint8_t parCnt){
     if(parCnt < 3 || parCnt > 4 ){
-        aos.o(aos.textInvalidParameter);
+        aos.p(textInvalidParameter);
         aos.manCommand("gpio");
         return;
     }
@@ -61,7 +60,7 @@ void aos_get(char** param,uint8_t parCnt){
 };
 void aos_set(char** param,uint8_t parCnt){
     if(parCnt != 3){
-        aos.o(aos.textInvalidParameter);
+        aos.p(textInvalidParameter);
         aos.manCommand("set");
         return;
     }
@@ -74,7 +73,7 @@ void aos_set(char** param,uint8_t parCnt){
 };
 void aos_stats(char** param,uint8_t parCnt){
     char str_temp[64];
-    snprintf(str_temp,64,"  Date: %s",aos_date);aos.o(str_temp);
+    snprintf(str_temp,64,"  Date: %s",aos_date.c_str());aos.o(str_temp);
     snprintf(str_temp,64,"  Heap: %d B",freeMemory());aos.o(str_temp);
     snprintf(str_temp,64,"EEPROM: %d B",aos._usedEeprom);aos.o(str_temp);
 };
@@ -90,7 +89,7 @@ void aos_reset(char** param,uint8_t parCnt){
     aos_reboot(NULL,NULL);
 }
 
-void ArduinoOS_default::begin(){
+ArduinoOS_default::ArduinoOS_default(){
     aos.addCommand("gpio",aos_gpio,"gpio [write|read] [#] [0|1]");
     aos.addCommand("help",aos_help,NULL,true);
     aos.addCommand("load",aos_load,NULL,true);
