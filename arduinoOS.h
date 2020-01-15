@@ -62,7 +62,7 @@ class ArduinoOS{
     public:
 
         //TEXT
-        //char* textErrorBegin{"call addVariable() before begin()"};
+        char* textErrorBegin{"call addVariable() before begin()"};
         char* textWelcome{"ArduinOS V1.0"};
         char* textCommandNotFound{"Command not found! Try 'help' for more information."};
         char* textInvalidParameter{"Invalid parameter!"};

@@ -81,7 +81,10 @@ bool ArduinoOS::addVariable(char* n,int& v,char* d,bool h,bool p)   {return _add
 bool ArduinoOS::addVariable(char* n,double& v,char* d,bool h,bool p){return _addVariable(n,&v,d,h,p,AOS_DT_DOUBLE);};
 bool ArduinoOS::addVariable(char* n,String& v,char* d,bool h,bool p){return _addVariable(n,&v,d,h,p,AOS_DT_STRING);};
 bool ArduinoOS::_addVariable(char* name,void* value,char* description,bool hidden,bool protect,AOS_DT aos_dt){
-    //if(_begin){o(textErrorBegin);return false;}
+    if(_begin){
+        o(textErrorBegin);
+        return false;
+    }
     AOS_VAR* b = new AOS_VAR{name,value,description,hidden,protect,aos_dt,nullptr};
     if(aos_var == nullptr){
         aos_var = b;
