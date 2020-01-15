@@ -1,10 +1,12 @@
 #include <arduinoOS.h>
 ArduinoOS aos;
+String aos_date{__DATE__ " " __TIME__};
+String aos_date_temp = aos_date;
 String aos_name{"arduinoOS"};
 
 //Global
 void ArduinoOS::begin(HardwareSerial& Serial,unsigned int baud){
-    addVariable("sys/name", aos_name, "Hostname",false, false);
+    wdt_enable(WDTO_4S);
     arduinoOS_default.begin();
     //Begin
     _begin      = true;
@@ -13,6 +15,7 @@ void ArduinoOS::begin(HardwareSerial& Serial,unsigned int baud){
     #if defined ESP8266 || defined ESP32 
         EEPROM.begin(EEPROM_SIZE);
     #endif
+    loadVariables();
     terminalWelcome();
 };
 void ArduinoOS::loop(){
@@ -22,6 +25,8 @@ void ArduinoOS::loop(){
             charIn(Serial.read());
         delay(5);
     }
+    //Watchdog
+    wdt_reset();
 };
 
 //Commands
@@ -76,7 +81,7 @@ bool ArduinoOS::addVariable(char* n,int& v,char* d,bool h,bool p)   {return _add
 bool ArduinoOS::addVariable(char* n,double& v,char* d,bool h,bool p){return _addVariable(n,&v,d,h,p,AOS_DT_DOUBLE);};
 bool ArduinoOS::addVariable(char* n,String& v,char* d,bool h,bool p){return _addVariable(n,&v,d,h,p,AOS_DT_STRING);};
 bool ArduinoOS::_addVariable(char* name,void* value,char* description,bool hidden,bool protect,AOS_DT aos_dt){
-    if(_begin){o(textErrorBegin);return false;}
+    //if(_begin){o(textErrorBegin);return false;}
     AOS_VAR* b = new AOS_VAR{name,value,description,hidden,protect,aos_dt,nullptr};
     if(aos_var == nullptr){
         aos_var = b;
@@ -154,8 +159,13 @@ void ArduinoOS::loadVariables(bool save){
                         char b = EEPROM.read(p);p++;
                         if((uint8_t)b == NULL) break;
                         *(String*)(i->value)+=b; 
+                        if((*(String*)(i->value)).length() >= LONG) break;
                     }
                 }
+            }
+            if(aos_date != aos_date_temp && !save){
+                o("RESET");aos_date=aos_date_temp;
+                loadVariables(true);return;
             }
         i = i->aos_var;
     };

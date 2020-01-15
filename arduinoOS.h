@@ -10,10 +10,14 @@
 #pragma once
 #include <arduino.h>
 #include <EEPROM.h>
+#include <avr/wdt.h>
 
 #define EEPROM_SIZE         1024        //Only for ESP
 #define SHORT               32          //Programm Parameter, Parameter Count
 #define LONG                64          //BufferIn, BufferOut, TerminalHistory
+
+extern String aos_date;
+extern String aos_name;
 
 class ArduinoOS{
     
@@ -58,12 +62,16 @@ class ArduinoOS{
     public:
 
         //TEXT
-        char* textErrorBegin{"call addVariable() before begin()"};
+        //char* textErrorBegin{"call addVariable() before begin()"};
         char* textWelcome{"ArduinOS V1.0"};
         char* textCommandNotFound{"Command not found! Try 'help' for more information."};
         char* textInvalidParameter{"Invalid parameter!"};
 
         //Global
+        ArduinoOS(){
+            addVariable("sys/date", aos_date,NULL,true,false);
+            addVariable("sys/name", aos_name,NULL,false,false);
+        }
         unsigned int _usedEeprom{0};
         void    begin(HardwareSerial&, unsigned int = 9600);
         void    loop();
@@ -97,5 +105,4 @@ class ArduinoOS{
 
 };
 extern ArduinoOS aos;
-extern String aos_name;
 #include <arduinoOS_default.h>
