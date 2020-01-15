@@ -22,6 +22,13 @@ Commands:
                stats : 
               reboot : 
                reset : 
+arduinoOS:/>get
+
+Variables:
+            sys/name :    arduinoOS		 
+            demo/int :         1234		 
+         demo/double :      1234.12		 
+         demo/string :         DEMO		This is a Demo String! 
 arduinoOS:/>
 ```
 
