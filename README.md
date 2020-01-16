@@ -34,7 +34,7 @@ arduinoOS:/>|
 | - | - | - | - |
 | help | - | show aviable commands | yes |
 | get | [parameter] | get a parameter (leave empty to list all parameter)| no |
-| set | [parameter] [value] | set a parameter |
+| set | [parameter] [value] | set a parameter | no |
 | load | - | load parameter from EEPROM (will automatically done on system start) | yes |
 | save | - | save parameter to EEPROM (will automatically done on *get*) | yes |
 | gpio | [gpio] [read/write] [0/1] | read or write GPIO | no |
@@ -47,8 +47,8 @@ arduinoOS:/>|
 * EEPROM will automatically reset after sketch upload
 
 <br/><br/>
+<img src="img/memory.png" width="25" align="right"/>
 **Add a parameter**
-<img src="img/memory.png" width="25" style="float:right"/>
 ```cpp
 aos.addVariable("demo/int",  myInt, "My confg int", false, false);
 ```
@@ -60,7 +60,7 @@ aos.addVariable("demo/int",  myInt, "My confg int", false, false);
 
 <br/><br/>
 **Add a command**
-<img src="img/commands.png" width="25" style="float:right"/>
+<img src="img/commands.png" width="25" align="right"/>
 ```cpp
 aos.addCommand("demo",myFunction,"demo [parm1] [parm2] - My Function",false);
 ```
@@ -71,7 +71,6 @@ aos.addCommand("demo",myFunction,"demo [parm1] [parm2] - My Function",false);
 
 <br/><br/>
 **Begin**
-<img src="img/arduinoOS.png" width="100" style="float:right"/>
 ```cpp
 aos.begin(Serial);
 ```
@@ -112,7 +111,7 @@ void loop()
 ```
 <br/><br/>
 **Roadmap:**
-<img src="img/plugins.png" width="25" style="float:right"/>
+<img src="img/plugins.png" width="25" align="right"/>
 - [ ] Allow WIFI-Config on ESP8266
 - [ ] Allow MQTT-Config on ESP8266
 - [ ] Allow NTP-Config on ESP8266
