@@ -96,8 +96,8 @@ ArduinoOS_default::ArduinoOS_default(){
     aos.addCommand("save",aos_save,NULL,true);
     aos.addCommand("get",aos_get,"get [parameter]");
     aos.addCommand("set",aos_set,"set [parameter] [value]");
-    aos.addCommand("stats",aos_stats,NULL,false);
+    aos.addCommand("stats",aos_stats,NULL);
     aos.addCommand("clear",aos_clear,NULL,true);
-    aos.addCommand("reboot",aos_reboot,NULL,false);
-    aos.addCommand("reset",aos_reset,NULL,false);
+    aos.addCommand("reboot",aos_reboot,NULL);
+    aos.addCommand("reset",aos_reset,NULL);
 }
