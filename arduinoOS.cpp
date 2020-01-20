@@ -4,22 +4,28 @@ ArduinoOS_default arduinoOS_default;
 String aos_date{__DATE__ " " __TIME__};
 String aos_date_temp = aos_date;
 String aos_name{"arduinoOS"};
+String aos_password{"demo"};
 
 //Global
 ArduinoOS::ArduinoOS(){
     addVariable("sys/date", aos_date,NULL,true,false);
     addVariable("sys/name", aos_name,NULL,false,false);
+    addVariable("sys/password", aos_password,NULL,true,false);
 }
 void ArduinoOS::begin(HardwareSerial& Serial,unsigned int baud){
-    wdt_enable(WDTO_4S);
-    _begin      = true;
-    _Serial     = &Serial;
-    _Serial->begin(baud);
+    isBegin         = true;
+    serialInstance  = &Serial;
+    if(enableSerial) serialInstance->begin(baud);
+    if(enableWatchdog) wdt_enable(WDTO_4S);
     #if defined ESP8266 || defined ESP32 
         EEPROM.begin(EEPROM_SIZE);
     #endif
-    loadVariables();
-    terminalWelcome();
+    if(autoLoad) loadVariables();
+    o(0x07,false,true);
+    p(textEscClear);
+    p(textWelcome);
+    aos.listCommands();
+    terminalNl();
 };
 void ArduinoOS::loop(){
     //Read Serial
@@ -40,17 +46,17 @@ bool ArduinoOS::addCommand(char* name,void (*function)(char** param, uint8_t par
     }else{
         AOS_CMD* i{aos_cmd};
         while(i->aos_cmd != nullptr){
-            if(strcmp(i->name,name)==0) return false;
+            if(!strcmp(i->name,name)) return false;
             i = i->aos_cmd;
         };
         i->aos_cmd = b;
     }
 };
-void ArduinoOS::listCommands(){
-    o("Commands:");
+void ArduinoOS::listCommands(char* filter){
+    p(textCommands);
     AOS_CMD* i{aos_cmd};
     while(i != nullptr){
-        if(!i->hidden){
+        if(!i->hidden && strstr(i->name, filter)){
             snprintf(charOutBuffer,LONG, "%20s : %s",i->name,i->description);o(charOutBuffer);
         }
         i = i->aos_cmd;
@@ -59,18 +65,18 @@ void ArduinoOS::listCommands(){
 void ArduinoOS::manCommand(char* name){
     AOS_CMD* i{aos_cmd};
     while(i != nullptr){
-        if(strcmp(i->name,name)==0){
+        if(!strcmp(i->name,name)){
             o(i->description);
-            return true;
+            return;
         }
         i = i->aos_cmd;
     };
-    return false;
+    return;
 }
 bool ArduinoOS::callCommand(char* name,char** param, uint8_t parCnt){
     AOS_CMD* i{aos_cmd};
     while(i != nullptr){
-        if(strcmp(i->name,name)==0){
+        if(!strcmp(i->name,name)){
             (*(i->function))(param, parCnt);
             return true;
         }
@@ -80,11 +86,12 @@ bool ArduinoOS::callCommand(char* name,char** param, uint8_t parCnt){
 }
 
 //Variables
+bool ArduinoOS::addVariable(char* n,bool& v,char* d,bool h,bool p)  {return _addVariable(n,&v,d,h,p,AOS_DT_BOOL);};
 bool ArduinoOS::addVariable(char* n,int& v,char* d,bool h,bool p)   {return _addVariable(n,&v,d,h,p,AOS_DT_INT);};
 bool ArduinoOS::addVariable(char* n,double& v,char* d,bool h,bool p){return _addVariable(n,&v,d,h,p,AOS_DT_DOUBLE);};
 bool ArduinoOS::addVariable(char* n,String& v,char* d,bool h,bool p){return _addVariable(n,&v,d,h,p,AOS_DT_STRING);};
 bool ArduinoOS::_addVariable(char* name,void* value,char* description,bool hidden,bool protect,AOS_DT aos_dt){
-    if(_begin){
+    if(isBegin){
         p(textErrorBegin);
         return false;
     }
@@ -94,17 +101,18 @@ bool ArduinoOS::_addVariable(char* name,void* value,char* description,bool hidde
     }else{
         AOS_VAR* i{aos_var};
         while(i->aos_var != nullptr){
-            if(strcmp(i->name,name)==0) return false;
+            if(!strcmp(i->name,name)) return false;
             i = i->aos_var;
         };
         i->aos_var = b;
     } 
 };
-void ArduinoOS::listVariables(){
-    o("Variables:");
+void ArduinoOS::listVariables(char* filter){
+    p(textVariables);
     AOS_VAR* i{aos_var};
     while(i != nullptr){
-        if(!i->hidden){ 
+        if(!i->hidden && strstr(i->name, filter)){ 
+            if(i->aos_dt==AOS_DT_BOOL)   snprintf(charOutBuffer,LONG,"%20s : %12s\t\t%s %s", i->name,*(bool*)(i->value) ? "true" : "false",i->description,(i->protect ? "(Protected)":""));
             if(i->aos_dt==AOS_DT_INT)    snprintf(charOutBuffer,LONG,"%20s : %12d\t\t%s %s", i->name,*(int*)(i->value),i->description,(i->protect ? "(Protected)":""));
             if(i->aos_dt==AOS_DT_DOUBLE) {char str_temp[SHORT];dtostrf(*(double*)(i->value), 4, 2, str_temp);snprintf(charOutBuffer,LONG,"%20s : %12s\t\t%s %s", i->name,str_temp,i->description,(i->protect ? "(Protected)":""));};
             if(i->aos_dt==AOS_DT_STRING) snprintf(charOutBuffer,LONG,"%20s : %12s\t\t%s %s", i->name,(*(String*)(i->value)).c_str(),i->description,(i->protect ? "(Protected)":""));
@@ -116,8 +124,9 @@ void ArduinoOS::listVariables(){
 bool ArduinoOS::setVariable(char* name,char* value){
     AOS_VAR* i{aos_var};
     while(i != nullptr){
-        if(strcmp(i->name,name)==0){
+        if(!strcmp(i->name,name)){
             if(i->protect) return false;
+            if(i->aos_dt==AOS_DT_BOOL)      *(bool*)(i->value)   = (!strcmp(i->name,"1") || !strcmp(i->name,"true")) ? true : false;
             if(i->aos_dt==AOS_DT_INT)       *(int*)(i->value)    = atoi(value);
             if(i->aos_dt==AOS_DT_DOUBLE)    *(double*)(i->value) = atof(value); 
             if(i->aos_dt==AOS_DT_STRING)    *(String*)(i->value) = value;
@@ -130,7 +139,8 @@ bool ArduinoOS::setVariable(char* name,char* value){
 bool ArduinoOS::getVariable(char* name, char* b){
     AOS_VAR* i{aos_var};
     while(i != nullptr){
-        if(strcmp(i->name,name)==0){
+        if(!strcmp(i->name,name)){
+            if(i->aos_dt==AOS_DT_BOOL)   sprintf(b,"%s",*(bool*)(i->value) ? "true" : "false");
             if(i->aos_dt==AOS_DT_INT)    sprintf(b,"%d",*(int*)(i->value));
             if(i->aos_dt==AOS_DT_DOUBLE){char str_temp[SHORT];dtostrf(*(double*)(i->value), 4, 2, str_temp);sprintf(b,"%s",str_temp);};
             if(i->aos_dt==AOS_DT_STRING) sprintf(b,"%s",(*(String*)(i->value)).c_str());
@@ -143,6 +153,11 @@ bool ArduinoOS::getVariable(char* name, char* b){
 void ArduinoOS::loadVariables(bool save){
     AOS_VAR* i{aos_var};unsigned int p{0};
     while(i != nullptr){
+            if(i->aos_dt==AOS_DT_BOOL){
+                if(save)EEPROM.put(p,*(bool*)(i->value));
+                else    EEPROM.get(p,*(bool*)(i->value));
+                p+=sizeof(bool);
+            } 
             if(i->aos_dt==AOS_DT_INT){
                 if(save)EEPROM.put(p,*(int*)(i->value));
                 else    EEPROM.get(p,*(int*)(i->value));
@@ -169,13 +184,13 @@ void ArduinoOS::loadVariables(bool save){
                     }
                 }
             }
-            if(aos_date != aos_date_temp && !save){
+            if(aos_date != aos_date_temp && !save && autoReset){
                 o("RESET");aos_date=aos_date_temp;
                 loadVariables(true);return;
             }
         i = i->aos_var;
     };
-    _usedEeprom = p;
+    usedEeprom = p;
     #if defined ESP8266 || defined ESP32 
         if(save) EEPROM.commit();
     #endif
@@ -183,21 +198,18 @@ void ArduinoOS::loadVariables(bool save){
 
 //Interface
 void ArduinoOS::o(const char c,bool nl, bool esc){
-    if(nl)  _Serial->println(c);    else    _Serial->print(c);
+    char caBuffer[2] = {c,NULL};o(caBuffer,nl,esc);
 };
 void ArduinoOS::o(const char* ca,bool nl, bool esc){
-    if(nl)  _Serial->println(ca);   else    _Serial->print(ca);
+    if(nl)  serialInstance->println(ca);   else    serialInstance->print(ca);
 };
 void ArduinoOS::p(const char* ca,bool nl, bool esc){
-    char c;
-    for (unsigned int k = 0; k < strlen_P(ca); k++) {
-        c = pgm_read_byte_near(ca + k);
-        o(c,false,esc);
+    char caBuffer[2] = {NULL,NULL};
+    for (unsigned int k = 0; k < strlen_P(ca); k++){
+        caBuffer[0] = pgm_read_byte_near(ca + k);
+        o(caBuffer,false,esc);
     }o("",nl,esc);
 };
-void ArduinoOS::cl(){
-    o("\33[2K",false,true);o(0x0D,false,true); //Clear Line
-}
 void ArduinoOS::charIn(char c){
         static char charInBufferLast;
         if(charEsc(c)) return;
@@ -213,18 +225,20 @@ void ArduinoOS::charIn(char c){
         }else if(c == 0x09){                                            //TAB
         }
         else if(c != 0x0A && c != 0x0D && charInBufferPos < LONG-1){    //NL+CR
-            if(_SerialEcho) o(c,false);
+            if(serialEcho) o(c,false);
             charInBuffer[charInBufferPos++] = c;
         }else{
             if(c == 0x0A && charInBufferLast == 0x0D || c == 0x0D && charInBufferLast == 0x0A) return;
             o("",true,true);
-            if(charInBufferPos>0){
+            if(!strcmp(charInBuffer,"logout")) locked = true;
+            if(charInBufferPos>0 && !locked){
                 strcpy(terminalHistory,charInBuffer);
-                terminalParseCommand();
-                charInBufferPos=0;
-            }
+                terminalParseCommand(); 
+            } 
+            if(!strcmp(charInBuffer,aos_password.c_str())) locked = false;
+            charInBufferPos=0;
             clearBuffer(charInBuffer,LONG);
-            snprintf(charOutBuffer,LONG,"%s:/>",aos_name.c_str());o(charOutBuffer,false);
+            terminalNl();
         }
     charInBufferLast = c;
 };
@@ -262,13 +276,15 @@ bool ArduinoOS::charEsc(char c){
 void ArduinoOS::clearBuffer(char* ca,unsigned int l){
     for(unsigned int i{0};i<l;i++)ca[i]=NULL;
 };
-void ArduinoOS::terminalWelcome(){
-    o(0x07,false,true);aos.o("\033[2J\033[1;1H");p(textWelcome);
-    aos.listCommands();
-    snprintf(charOutBuffer,LONG,"%s:/>",aos_name.c_str());o(charOutBuffer,false);
+void ArduinoOS::terminalNl(){
+    if(locked){
+        p(textEnterPassword,false);
+    }else{
+        snprintf(charOutBuffer,LONG,"%s:/>",aos_name.c_str());o(charOutBuffer,false);
+    };
 }
 void ArduinoOS::terminalHandleHistory(bool u){
-    cl();
+    o("\33[2K",false,true);o(0x0D,false,true);
     if(u){
         snprintf(charOutBuffer,LONG,"%s:/>%s",aos_name.c_str(),terminalHistory);o(charOutBuffer,false);
         strcpy(charInBuffer,terminalHistory);

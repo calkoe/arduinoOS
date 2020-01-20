@@ -9,7 +9,7 @@
 * Enables access to application-functions
 * Int, Double and String datatypes supported for parameter
 * Robust design with no Heap-Fragmentation
-* Small footprint (782 Bytes of SRAM)
+* Small footprint (770 Bytes of SRAM)
 
 **Terminal:**
 ```

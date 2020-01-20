@@ -16,6 +16,8 @@ int freeMemory() {
   return __brkval ? &top - __brkval : &top - __malloc_heap_start;
 #endif  // __arm__
 }
+//int freeMemory() { return 0; };
+
 
 //Default Functions
 void aos_gpio(char** param,uint8_t parCnt){
@@ -37,7 +39,7 @@ void aos_gpio(char** param,uint8_t parCnt){
     }
 }
 void aos_help(char** param,uint8_t parCnt){
-    aos.listCommands();
+    aos.listCommands(param[1]);
 };
 void aos_load(char** param,uint8_t parCnt){
     aos.loadVariables(false);
@@ -48,14 +50,11 @@ void aos_save(char** param,uint8_t parCnt){
     aos.o("ok");
 };
 void aos_get(char** param,uint8_t parCnt){
-    if(parCnt != 2){
-        aos.listVariables();return;
-    }
     char b[SHORT];
     if(aos.getVariable(param[1],b)){
       aos.o(b);
     }else{
-        aos.o("Not Found!"); 
+      aos.listVariables(param[1]);
     }
 };
 void aos_set(char** param,uint8_t parCnt){
@@ -68,17 +67,17 @@ void aos_set(char** param,uint8_t parCnt){
       aos.loadVariables(true);
       aos.o("ok");
     }else{
-      aos.o("Not Found!"); 
+      aos.p(textNotFound); 
     } 
 };
 void aos_stats(char** param,uint8_t parCnt){
     char str_temp[64];
     snprintf(str_temp,64,"  Date: %s",aos_date.c_str());aos.o(str_temp);
     snprintf(str_temp,64,"  Heap: %d B",freeMemory());aos.o(str_temp);
-    snprintf(str_temp,64,"EEPROM: %d B",aos._usedEeprom);aos.o(str_temp);
+    snprintf(str_temp,64,"EEPROM: %d B",aos.usedEeprom);aos.o(str_temp);
 };
 void aos_clear(char** param,uint8_t parCnt){
-    aos.o("\033[2J\033[1;1H");
+    aos.p(textEscClear);
 };
 void aos_reboot(char** param,uint8_t parCnt){
     for(int i{0};;i++){aos.o('.',false);delay(333);}
@@ -94,10 +93,10 @@ ArduinoOS_default::ArduinoOS_default(){
     aos.addCommand("help",aos_help,NULL,true);
     aos.addCommand("load",aos_load,NULL,true);
     aos.addCommand("save",aos_save,NULL,true);
-    aos.addCommand("get",aos_get,"get [parameter]");
+    aos.addCommand("get",aos_get,"get [fiter]");
     aos.addCommand("set",aos_set,"set [parameter] [value]");
-    aos.addCommand("stats",aos_stats,NULL);
+    aos.addCommand("stats",aos_stats,"-");
     aos.addCommand("clear",aos_clear,NULL,true);
-    aos.addCommand("reboot",aos_reboot,NULL);
-    aos.addCommand("reset",aos_reset,NULL);
+    aos.addCommand("reboot",aos_reboot,"-");
+    aos.addCommand("reset",aos_reset,"-");
 }
