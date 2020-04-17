@@ -1,5 +1,6 @@
 #include <arduinoOS_default.h>
 
+#if not defined ESP8266
 #ifdef __arm__
 // should use uinstd.h to define sbrk but Due causes a conflict
 extern "C" char* sbrk(int incr);
@@ -16,8 +17,10 @@ int freeMemory() {
   return __brkval ? &top - __brkval : &top - __malloc_heap_start;
 #endif  // __arm__
 }
-//int freeMemory() { return 0; };
-
+#endif
+#if defined ESP8266
+  int freeMemory() { return ESP.getFreeHeap(); };
+#endif
 
 //Default Functions
 void aos_gpio(char** param,uint8_t parCnt){
@@ -85,18 +88,18 @@ void aos_reboot(char** param,uint8_t parCnt){
 void aos_reset(char** param,uint8_t parCnt){
     aos_date = "";
     aos.loadVariables(true);
-    aos_reboot(NULL,NULL);
+    aos_reboot(0,0);
 }
 
 ArduinoOS_default::ArduinoOS_default(){
     aos.addCommand("gpio",aos_gpio,"gpio [write|read] [#] [0|1]");
-    aos.addCommand("help",aos_help,NULL,true);
-    aos.addCommand("load",aos_load,NULL,true);
-    aos.addCommand("save",aos_save,NULL,true);
+    aos.addCommand("help",aos_help,0,true);
+    aos.addCommand("load",aos_load,0,true);
+    aos.addCommand("save",aos_save,0,true);
     aos.addCommand("get",aos_get,"get [fiter]");
     aos.addCommand("set",aos_set,"set [parameter] [value]");
     aos.addCommand("stats",aos_stats,"-");
-    aos.addCommand("clear",aos_clear,NULL,true);
+    aos.addCommand("clear",aos_clear,0,true);
     aos.addCommand("reboot",aos_reboot,"-");
     aos.addCommand("reset",aos_reset,"-");
 }

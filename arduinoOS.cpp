@@ -8,9 +8,9 @@ String aos_password{"demo"};
 
 //Global
 ArduinoOS::ArduinoOS(){
-    addVariable("sys/date", aos_date,NULL,true,false);
-    addVariable("sys/name", aos_name,NULL,false,false);
-    addVariable("sys/password", aos_password,NULL,true,false);
+    addVariable("sys/date", aos_date,0,true,false);
+    addVariable("sys/name", aos_name,0,false,false);
+    addVariable("sys/password", aos_password,0,true,false);
 }
 void ArduinoOS::begin(HardwareSerial& Serial,unsigned int baud){
     isBegin         = true;
@@ -51,6 +51,7 @@ bool ArduinoOS::addCommand(char* name,void (*function)(char** param, uint8_t par
         };
         i->aos_cmd = b;
     }
+    return true;
 };
 void ArduinoOS::listCommands(char* filter){
     p(textCommands);
@@ -106,6 +107,7 @@ bool ArduinoOS::_addVariable(char* name,void* value,char* description,bool hidde
         };
         i->aos_var = b;
     } 
+    return true;
 };
 void ArduinoOS::listVariables(char* filter){
     p(textVariables);
@@ -173,12 +175,12 @@ void ArduinoOS::loadVariables(bool save){
                     for(unsigned int s{0};s<(*(String*)(i->value)).length();s++,p++){
                         EEPROM.write(p,(*(String*)(i->value))[s]);
                     }
-                    EEPROM.write(p,NULL);p++;
+                    EEPROM.write(p,0);p++;
                 }else{
                     *(String*)(i->value) = "";
                     while(true){
                         char b = EEPROM.read(p);p++;
-                        if((uint8_t)b == NULL) break;
+                        if((uint8_t)b == 0) break;
                         *(String*)(i->value)+=b; 
                         if((*(String*)(i->value)).length() >= LONG) break;
                     }
@@ -198,13 +200,13 @@ void ArduinoOS::loadVariables(bool save){
 
 //Interface
 void ArduinoOS::o(const char c,bool nl, bool esc){
-    char caBuffer[2] = {c,NULL};o(caBuffer,nl,esc);
+    char caBuffer[2] = {c,0};o(caBuffer,nl,esc);
 };
 void ArduinoOS::o(const char* ca,bool nl, bool esc){
     if(nl)  serialInstance->println(ca);   else    serialInstance->print(ca);
 };
 void ArduinoOS::p(const char* ca,bool nl, bool esc){
-    char caBuffer[2] = {NULL,NULL};
+    char caBuffer[2] = {0,0};
     for (unsigned int k = 0; k < strlen_P(ca); k++){
         caBuffer[0] = pgm_read_byte_near(ca + k);
         o(caBuffer,false,esc);
@@ -218,7 +220,7 @@ void ArduinoOS::charIn(char c){
                 o(0x08,false,true);                                     //BACKSPACE
                 o(0x20,false,true);                                     //SPACE
                 o(0x08,false,true);                                     //BACKSPACE
-                charInBuffer[--charInBufferPos] = NULL;
+                charInBuffer[--charInBufferPos] = 0;
             }else{
                 o(0x07,false,true);                                     //BELL
             }
@@ -228,7 +230,7 @@ void ArduinoOS::charIn(char c){
             if(serialEcho) o(c,false);
             charInBuffer[charInBufferPos++] = c;
         }else{
-            if(c == 0x0A && charInBufferLast == 0x0D || c == 0x0D && charInBufferLast == 0x0A) return;
+            if((c == 0x0A && charInBufferLast == 0x0D) || (c == 0x0D && charInBufferLast == 0x0A)) return;
             o("",true,true);
             if(!strcmp(charInBuffer,"logout")) locked = true;
             if(charInBufferPos>0 && !locked){
@@ -274,7 +276,7 @@ bool ArduinoOS::charEsc(char c){
     return ret;
 }
 void ArduinoOS::clearBuffer(char* ca,unsigned int l){
-    for(unsigned int i{0};i<l;i++)ca[i]=NULL;
+    for(unsigned int i{0};i<l;i++)ca[i]=0;
 };
 void ArduinoOS::terminalNl(){
     if(locked){
@@ -299,6 +301,6 @@ void ArduinoOS::terminalParseCommand(){
     uint8_t parCnt{0};
     char*   param[SHORT];
     char*   split = strtok(charInBuffer, " ");
-    while(split){param[parCnt++] = split;split = strtok(NULL, " ");}
+    while(split){param[parCnt++] = split;split = strtok(0, " ");}
     if(parCnt>0) if(!callCommand(param[0],param,parCnt)) p(textCommandNotFound);
 };

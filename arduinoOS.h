@@ -10,15 +10,15 @@
 #pragma once
 #include <arduino.h>
 #include <EEPROM.h>
-#include <avr/wdt.h>
-
-#define SHORT               32          //Programm Parameter, Parameter Count
-#define LONG                64          //BufferIn, BufferOut, TerminalHistory
 
 #if defined ESP8266 || defined ESP32 
     #define EEPROM_SIZE         1024    //Only for ESP
     #define SHORT               128     //Programm Parameter, Parameter Count
     #define LONG                128     //BufferIn, BufferOut, TerminalHistory
+#else
+    #include <avr/wdt.h>
+    #define SHORT               32          //Programm Parameter, Parameter Count
+    #define LONG                64          //BufferIn, BufferOut, TerminalHistory
 #endif
 
 //Plugins
@@ -90,7 +90,7 @@ class ArduinoOS{
         bool    addCommand(char*,void (*)(char**, uint8_t),char* = "",bool = false);
         void    listCommands(char* = "");
         void    manCommand(char*);
-        bool    callCommand(char*,char** = NULL, uint8_t = NULL);
+        bool    callCommand(char*,char** = NULL, uint8_t = 0);
 
         //Variables
         bool    addVariable(char*,bool&,  char* = "",bool = false,bool = false);
