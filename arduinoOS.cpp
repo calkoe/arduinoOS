@@ -8,9 +8,9 @@ String aos_password{"demo"};
 
 //Global
 ArduinoOS::ArduinoOS(){
-    addVariable("sys/date", aos_date,0,true,false);
-    addVariable("sys/name", aos_name,0,false,false);
-    addVariable("sys/password", aos_password,0,true,false);
+    addVariable("sys/date", aos_date,"",true,false);
+    addVariable("sys/name", aos_name,"",false,false);
+    addVariable("sys/password", aos_password,"",true,false);
 }
 void ArduinoOS::begin(HardwareSerial& Serial,unsigned int baud){
     isBegin         = true;
@@ -299,7 +299,7 @@ void ArduinoOS::terminalHandleHistory(bool u){
 }
 void ArduinoOS::terminalParseCommand(){
     uint8_t parCnt{0};
-    char*   param[SHORT];
+    char*   param[SHORT]{""};
     char*   split = strtok(charInBuffer, " ");
     while(split){param[parCnt++] = split;split = strtok(0, " ");}
     if(parCnt>0) if(!callCommand(param[0],param,parCnt)) p(textCommandNotFound);

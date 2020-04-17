@@ -17,8 +17,8 @@
     #define LONG                128     //BufferIn, BufferOut, TerminalHistory
 #else
     #include <avr/wdt.h>
-    #define SHORT               32          //Programm Parameter, Parameter Count
-    #define LONG                64          //BufferIn, BufferOut, TerminalHistory
+    #define SHORT               32      //Programm Parameter, Parameter Count
+    #define LONG                64      //BufferIn, BufferOut, TerminalHistory
 #endif
 
 //Plugins

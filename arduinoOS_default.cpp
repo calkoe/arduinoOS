@@ -42,7 +42,10 @@ void aos_gpio(char** param,uint8_t parCnt){
     }
 }
 void aos_help(char** param,uint8_t parCnt){
-    aos.listCommands(param[1]);
+    if(parCnt == 1)
+      aos.listCommands();
+    if(parCnt == 2)
+      aos.listCommands(param[1]);
 };
 void aos_load(char** param,uint8_t parCnt){
     aos.loadVariables(false);
@@ -54,11 +57,13 @@ void aos_save(char** param,uint8_t parCnt){
 };
 void aos_get(char** param,uint8_t parCnt){
     char b[SHORT];
-    if(aos.getVariable(param[1],b)){
-      aos.o(b);
-    }else{
-      aos.listVariables(param[1]);
-    }
+    if(parCnt == 2){
+      if(aos.getVariable(param[1],b))
+        aos.o(b);
+      else
+        aos.listVariables(param[1]);
+    }else
+      aos.listVariables();
 };
 void aos_set(char** param,uint8_t parCnt){
     if(parCnt != 3){
