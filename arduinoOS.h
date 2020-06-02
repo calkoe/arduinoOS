@@ -17,16 +17,14 @@
     #define LONG                128     //BufferIn, BufferOut, TerminalHistory
 #else
     #include <avr/wdt.h>
-    #define SHORT               32      //Programm Parameter, Parameter Count
-    #define LONG                64      //BufferIn, BufferOut, TerminalHistory
+    #define SHORT               16      //Programm Parameter, Parameter Count
+    #define LONG                64      //IO Buffer
 #endif
 
-//Plugins
-#include <arduinoOS_default.h>
 
 //Text
-const char textErrorBegin[] PROGMEM         = "call addVariable() before begin()";
-const char textWelcome[] PROGMEM            = "ArduinOS V1.0 - https://github.com/calkoe/arduinoOS\r\n\r\n";
+const char textErrorBegin[] PROGMEM         = "call addVariable() before begin() !";
+const char textWelcome[] PROGMEM            = "ArduinOS V1.1 - https://github.com/calkoe/arduinoOS\r\n\r\n";
 const char textCommandNotFound[] PROGMEM    = "Command not found! Try 'help' for more information.";
 const char textInvalidParameter[] PROGMEM   = "Invalid parameter!";
 const char textEnterPassword[] PROGMEM      = "Please enter password: ";
@@ -34,6 +32,7 @@ const char textCommands[] PROGMEM           = "Commands:";
 const char textVariables[] PROGMEM          = "Variables:";
 const char textNotFound[] PROGMEM           = "Parameter not found!";
 const char textEscClear[] PROGMEM           = "\033[2J\033[1;1H";
+const char textOk[] PROGMEM                 = "ok";
 
 class ArduinoOS{
     
@@ -57,15 +56,21 @@ class ArduinoOS{
             AOS_DT      aos_dt;
             AOS_VAR*    aos_var;
         };
-
+        struct AOS_EVT {
+            char*       name;
+            void        (*function)(char);
+            bool        active;
+            char        payload;
+            AOS_EVT*    aos_evt;
+        };
         bool            isBegin{false};
         HardwareSerial* serialInstance;
         AOS_CMD*        aos_cmd{nullptr};
         AOS_VAR*        aos_var{nullptr};
+        AOS_EVT*        aos_evt{nullptr};
 
-        char            charInBuffer[LONG];
-        unsigned int    charInBufferPos{0};
-        char            charOutBuffer[LONG];
+        char            charIOBuffer[LONG];
+        unsigned        charIOBufferPos{0};
         char            terminalHistory[LONG];
 
         bool            _addVariable(char*,void*,char*,bool,bool,AOS_DT);
@@ -78,26 +83,35 @@ class ArduinoOS{
         void    loop();
 
         //Settings
-        unsigned int    usedEeprom{0};
-        bool            serialEcho{true};
-        bool            enableWatchdog{true};
-        bool            enableSerial{true};
-        bool            autoLoad{true};
-        bool            autoReset{true};
-        bool            locked{false};
+        unsigned    usedEeprom{0};
+        bool        serialEcho{true};
+        bool        enableWatchdog{true};
+        bool        enableSerial{true};
+        bool        autoLoad{true};
+        bool        autoReset{true};
+        bool        locked{false};
+        String      aos_date{__DATE__ " " __TIME__};
+        String      aos_date_temp = aos_date;
+        String      aos_name{"root"};
+        String      aos_password{"root"};
+
+        //Events
+        void    listenEvent(char*,void (*)(char));
+        void    emitEvent(char*,char,bool = false);
+        void    loopEvent();
 
         //Commands
-        bool    addCommand(char*,void (*)(char**, uint8_t),char* = "",bool = false);
-        void    listCommands(char* = "");
+        bool    addCommand(char*,void (*)(char**, uint8_t),char* = (char)0,bool = false);
+        void    listCommands(char* = (char)0);
         void    manCommand(char*);
-        bool    callCommand(char*,char** = NULL, uint8_t = 0);
+        bool    callCommand(char*,char** = (char)0, uint8_t = 0);
 
         //Variables
-        bool    addVariable(char*,bool&,  char* = "",bool = false,bool = false);
-        bool    addVariable(char*,int&,   char* = "",bool = false,bool = false);
-        bool    addVariable(char*,double&,char* = "",bool = false,bool = false);
-        bool    addVariable(char*,String&,char* = "",bool = false,bool = false);
-        void    listVariables(char* = "");
+        bool    addVariable(char*,bool&,  char* = (char)0,bool = false,bool = false);
+        bool    addVariable(char*,int&,   char* = (char)0,bool = false,bool = false);
+        bool    addVariable(char*,double&,char* = (char)0,bool = false,bool = false);
+        bool    addVariable(char*,String&,char* = (char)0,bool = false,bool = false);
+        void    listVariables(char* = (char)0);
         bool    setVariable(char*,char*);
         bool    getVariable(char*,char*);
         void    loadVariables(bool = false);
@@ -114,8 +128,19 @@ class ArduinoOS{
         void    terminalHandleHistory(bool);
         void    terminalParseCommand();
 
+        //Default
+        void        defaultInit();
+        int         freeMemory();
+        static void aos_gpio(char**,uint8_t);
+        static void aos_help(char**,uint8_t);
+        static void aos_load(char**,uint8_t);
+        static void aos_save(char**,uint8_t);
+        static void aos_get(char**,uint8_t);
+        static void aos_set(char**,uint8_t);
+        static void aos_stats(char**,uint8_t);
+        static void aos_clear(char**,uint8_t);
+        static void aos_reboot(char**,uint8_t);
+        static void aos_reset(char**,uint8_t);
+
 };
 extern ArduinoOS aos;
-extern String aos_date;
-extern String aos_name;
-extern String aos_password;
