@@ -1,6 +1,6 @@
 //
 //  arduinoOS.h
-//  V1
+//  V1.1
 //
 //  Created by Calvin Köcher on 09.01.20.
 //  Copyright © 2020 Calvin Köcher. All rights reserved.
@@ -119,6 +119,7 @@ class ArduinoOS{
         //Interface
         void    o(const char,bool=true,bool=false);
         void    o(const char*,bool=true,bool=false);
+        void    o(String,bool=true,bool=false);
         void    p(const char*,bool=true,bool=false);
 
         void    charIn(char);
@@ -128,7 +129,7 @@ class ArduinoOS{
         void    terminalHandleHistory(bool);
         void    terminalParseCommand();
 
-        //Default
+        //Default Commands
         void        defaultInit();
         int         freeMemory();
         static void aos_gpio(char**,uint8_t);

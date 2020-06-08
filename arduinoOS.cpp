@@ -1,14 +1,12 @@
 #include <arduinoOS.h>
 ArduinoOS aos;
 
-
 //Global
-ArduinoOS::ArduinoOS(){
+ArduinoOS::ArduinoOS(){}
+void ArduinoOS::begin(HardwareSerial& Serial,unsigned int baud){
     addVariable("sys/date", aos_date,(char)0,true,false);
     addVariable("sys/name", aos_name,(char)0,false,false);
     addVariable("sys/password", aos_password,(char)0,true,false);
-}
-void ArduinoOS::begin(HardwareSerial& Serial,unsigned int baud){
     isBegin         = true;
     serialInstance  = &Serial;
     if(enableSerial) serialInstance->begin(baud);
@@ -242,6 +240,9 @@ void ArduinoOS::o(const char c,bool nl, bool esc){
 void ArduinoOS::o(const char* ca,bool nl, bool esc){
     if(nl)  serialInstance->println(ca);   else    serialInstance->print(ca);
 };
+void ArduinoOS::o(String s,bool nl, bool esc){
+    if(nl)  serialInstance->println(s);   else    serialInstance->print(s);
+};
 void ArduinoOS::p(const char* ca,bool nl, bool esc){
     char caBuffer[2] = {0,0};
     for (unsigned int k = 0; k < strlen_P(ca); k++){
@@ -250,7 +251,6 @@ void ArduinoOS::p(const char* ca,bool nl, bool esc){
     }o("",nl,esc);
 };
 void ArduinoOS::charIn(char c){
-        emitEvent("charIn",c,true);
         static char charIOBufferLast;
         if(charEsc(c)) return;
         if(c == 0x7F || c == 0x08){                                     //DEL BACKSPACE

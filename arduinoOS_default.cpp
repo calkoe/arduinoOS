@@ -22,7 +22,7 @@ int ArduinoOS::freeMemory() {
   int ArduinoOS::freeMemory() { return ESP.getFreeHeap(); };
 #endif
 
-//Default Functions
+//Interface Methods
 void ArduinoOS::aos_gpio(char** param,uint8_t parCnt){
     if(parCnt < 3 || parCnt > 4 ){
         aos.p(textInvalidParameter);
