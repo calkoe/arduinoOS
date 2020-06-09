@@ -79,10 +79,9 @@ void ArduinoOS::aos_set(char** param,uint8_t parCnt){
     } 
 };
 void ArduinoOS::aos_stats(char** param,uint8_t parCnt){
-    char str_temp[32];
-    snprintf(str_temp,32,"  Date: %s",aos.aos_date.c_str());aos.o(str_temp);
-    snprintf(str_temp,32,"  Heap: %d B",aos.freeMemory());aos.o(str_temp);
-    snprintf(str_temp,32,"EEPROM: %d B",aos.usedEeprom);aos.o(str_temp);
+    snprintf(aos.charIOBuffer,LONG,"COMPILED: %s",aos.aos_date.c_str());aos.o(aos.charIOBuffer);
+    snprintf(aos.charIOBuffer,LONG,"    HEAP: %d B",aos.freeMemory());aos.o(aos.charIOBuffer);
+    snprintf(aos.charIOBuffer,LONG,"  EEPROM: %d B",aos.usedEeprom);aos.o(aos.charIOBuffer);
 };
 void ArduinoOS::aos_clear(char** param,uint8_t parCnt){
     aos.p(textEscClear);
@@ -98,13 +97,13 @@ void ArduinoOS::aos_reset(char** param,uint8_t parCnt){
 
 void ArduinoOS::defaultInit(){
     aos.addCommand("gpio",aos_gpio,"gpio [w|r] [pin] [0|1]");
-    aos.addCommand("help",aos_help,(char)0,true);
-    aos.addCommand("load",aos_load,(char)0,true);
-    aos.addCommand("save",aos_save,(char)0,true);
+    aos.addCommand("help",aos_help,"",true);
+    aos.addCommand("load",aos_load,"",true);
+    aos.addCommand("save",aos_save,"",true);
     aos.addCommand("get",aos_get,"get [?]");
     aos.addCommand("set",aos_set,"set [par] [val]");
-    aos.addCommand("stats",aos_stats,"-");
-    aos.addCommand("clear",aos_clear,(char)0,true);
+    aos.addCommand("status",aos_stats,"-");
+    aos.addCommand("clear",aos_clear,"",true);
     aos.addCommand("reboot",aos_reboot,"-");
     aos.addCommand("reset",aos_reset,"-");
 };

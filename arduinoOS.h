@@ -101,17 +101,17 @@ class ArduinoOS{
         void    loopEvent();
 
         //Commands
-        bool    addCommand(char*,void (*)(char**, uint8_t),char* = (char)0,bool = false);
-        void    listCommands(char* = (char)0);
+        bool    addCommand(char*,void (*)(char**, uint8_t),char* = "",bool = false);
+        void    listCommands(char* = "");
         void    manCommand(char*);
-        bool    callCommand(char*,char** = (char)0, uint8_t = 0);
+        bool    callCommand(char*,char** = 0, uint8_t = 0);
 
         //Variables
-        bool    addVariable(char*,bool&,  char* = (char)0,bool = false,bool = false);
-        bool    addVariable(char*,int&,   char* = (char)0,bool = false,bool = false);
-        bool    addVariable(char*,double&,char* = (char)0,bool = false,bool = false);
-        bool    addVariable(char*,String&,char* = (char)0,bool = false,bool = false);
-        void    listVariables(char* = (char)0);
+        bool    addVariable(char*,bool&,  char* = "",bool = false,bool = false);
+        bool    addVariable(char*,int&,   char* = "",bool = false,bool = false);
+        bool    addVariable(char*,double&,char* = "",bool = false,bool = false);
+        bool    addVariable(char*,String&,char* = "",bool = false,bool = false);
+        void    listVariables(char* = "");
         bool    setVariable(char*,char*);
         bool    getVariable(char*,char*);
         void    loadVariables(bool = false);

@@ -1,18 +1,18 @@
 #include "arduinoOS_wifi.h"
 arduinoOS_wifi aos_wifi;
 
+//Global
 arduinoOS_wifi::arduinoOS_wifi(){};
-
 void arduinoOS_wifi::begin(){
 
     //Settings
     aos.addVariable("wifi/enabled",      sta_enabled);
     aos.addVariable("wifi/network",      sta_network);
-    aos.addVariable("wifi/password",     sta_enabled);
-    aos.addVariable("wifi/ip",           sta_ip, (char)0, true, false);
-    aos.addVariable("wifi/subnet",       sta_subnet, (char)0,true, false);
-    aos.addVariable("wifi/gateway",      sta_gateway, (char)0, true, false);
-    aos.addVariable("wifi/dns",          sta_dns, (char)0, true, false);
+    aos.addVariable("wifi/password",     sta_password);
+    aos.addVariable("wifi/ip",           sta_ip, "", true, false);
+    aos.addVariable("wifi/subnet",       sta_subnet, "",true, false);
+    aos.addVariable("wifi/gateway",      sta_gateway, "", true, false);
+    aos.addVariable("wifi/dns",          sta_dns, "", true, false);
 
     aos.addVariable("hotspot/ap_enabled",ap_enabled);
     aos.addVariable("hotspot/network",   ap_network);
