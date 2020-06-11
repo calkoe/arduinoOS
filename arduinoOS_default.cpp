@@ -94,16 +94,3 @@ void ArduinoOS::aos_reset(char** param,uint8_t parCnt){
     aos.loadVariables(true);
     aos_reboot(0,0);
 }
-
-void ArduinoOS::defaultInit(){
-    aos.addCommand("gpio",aos_gpio,"gpio [w|r] [pin] [0|1]");
-    aos.addCommand("help",aos_help,"",true);
-    aos.addCommand("load",aos_load,"",true);
-    aos.addCommand("save",aos_save,"",true);
-    aos.addCommand("get",aos_get,"get [?]");
-    aos.addCommand("set",aos_set,"set [par] [val]");
-    aos.addCommand("status",aos_stats,"-");
-    aos.addCommand("clear",aos_clear,"",true);
-    aos.addCommand("reboot",aos_reboot,"-");
-    aos.addCommand("reset",aos_reset,"-");
-};

@@ -15,10 +15,12 @@
     #define EEPROM_SIZE         1024    //Only for ESP
     #define SHORT               128     //Programm Parameter, Parameter Count
     #define LONG                128     //BufferIn, BufferOut, TerminalHistory
+    #define SERSPEED            112500 
 #else
     #include <avr/wdt.h>
     #define SHORT               16      //Programm Parameter, Parameter Count
     #define LONG                64      //IO Buffer
+   #define SERSPEED             9600 
 #endif
 
 
@@ -69,18 +71,18 @@ class ArduinoOS{
         AOS_VAR*        aos_var{nullptr};
         AOS_EVT*        aos_evt{nullptr};
 
-        char            charIOBuffer[LONG];
+        
         unsigned        charIOBufferPos{0};
         char            terminalHistory[LONG];
-
         bool            _addVariable(char*,void*,char*,bool,bool,AOS_DT);
         
     public:   
 
         //Global
         ArduinoOS();
-        void    begin(HardwareSerial&, unsigned int = 9600);
+        void    begin(HardwareSerial&, unsigned int = SERSPEED);
         void    loop();
+        char    charIOBuffer[LONG];
 
         //Settings
         unsigned    usedEeprom{0};
@@ -130,8 +132,7 @@ class ArduinoOS{
         void    terminalParseCommand();
 
         //Default Commands
-        void        defaultInit();
-        int         freeMemory();
+        int    freeMemory();
         static void aos_gpio(char**,uint8_t);
         static void aos_help(char**,uint8_t);
         static void aos_load(char**,uint8_t);
@@ -144,4 +145,5 @@ class ArduinoOS{
         static void aos_reset(char**,uint8_t);
 
 };
+
 extern ArduinoOS aos;

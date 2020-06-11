@@ -1,5 +1,7 @@
 #include <arduino.h>
 #include "arduinoOS.h"
+#include <ESP8266WiFi.h> 
+#include <Math.h>
 
 #pragma once
 
@@ -42,7 +44,6 @@ class arduinoOS_wifi{
 
         //Methods
 
-        
 
 };
 extern arduinoOS_wifi aos_wifi;

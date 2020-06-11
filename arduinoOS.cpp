@@ -6,6 +6,16 @@ ArduinoOS::ArduinoOS(){
     addVariable("sys/date", aos_date,"",true,false);
     addVariable("sys/name", aos_name,"",false,false);
     addVariable("sys/password", aos_password,"",true,false);
+    addCommand("gpio",aos_gpio,"gpio [w|r] [pin] [0|1]");
+    addCommand("help",aos_help,"",true);
+    addCommand("load",aos_load,"",true);
+    addCommand("save",aos_save,"",true);
+    addCommand("get",aos_get,"get [?]");
+    addCommand("set",aos_set,"set [par] [val]");
+    addCommand("status",aos_stats,"-");
+    addCommand("clear",aos_clear,"",true);
+    addCommand("reboot",aos_reboot,"-");
+    addCommand("reset",aos_reset,"-");
 }
 void ArduinoOS::begin(HardwareSerial& Serial,unsigned int baud){
     isBegin         = true;
@@ -16,7 +26,6 @@ void ArduinoOS::begin(HardwareSerial& Serial,unsigned int baud){
         EEPROM.begin(EEPROM_SIZE);
     #endif
     if(autoLoad) loadVariables();
-    defaultInit();
     o(0x07,false,true);
     p(textEscClear);
     p(textWelcome);
@@ -342,30 +351,24 @@ void ArduinoOS::terminalParseCommand(){
     //char*   split = strtok(charIOBuffer, " ");
     //while(split){param[parCnt++] = split;split = strtok(0, " ");}
     //if(parCnt>0) if(!callCommand(param[0],param,parCnt)) p(textCommandNotFound);
-    bool        inBrackets{false};
-    uint8_t     pos{0};
+    unsigned s{0};
     
     for(unsigned i{0};i<LONG;i++){
-        if((charIOBuffer[i] == ' ' && !inBrackets) || (charIOBuffer[i] == '"' && inBrackets) || charIOBuffer[i] == '\0'){
-  
-            //Copy
-            char * buffer = (char *)malloc(i-pos+1);
-            for(unsigned j{0};j<(i-pos);j++) buffer[j] = charIOBuffer[pos+j];
-            buffer[i-pos] = '\0';
-            param[parCnt++] = buffer;
-            if(charIOBuffer[i] == '\0' || charIOBuffer[i+1] == '\0') break;
-            pos=++i;
-            
-            //Brackets
-            if(inBrackets){
-                inBrackets = false;
-                pos++;
-            }else if(charIOBuffer[i] == '"') {
-                inBrackets = true;
-                pos++;
+        s = i;
+        while(charIOBuffer[i] != 32 && charIOBuffer[i]){
+            if(charIOBuffer[i] == 34 && charIOBuffer[i-1] != 27){
+                s = ++i;
+                while((charIOBuffer[i] != 34 || charIOBuffer[i-1] == 27) && charIOBuffer[i]) i++;
+                break;
             }
-            
+            i++;
+        };
+        if(i!=s){
+            char* buffer = (char*)malloc(i-s+1);
+            for(unsigned j{0};j<(i-s);j++) buffer[j] = charIOBuffer[s+j];
+            buffer[i-s] = 0;param[parCnt++] = buffer;
         }
+        if(!charIOBuffer[i]) break;
     }
 
     if(parCnt>0) if(!callCommand(param[0],param,parCnt)) p(textCommandNotFound);
