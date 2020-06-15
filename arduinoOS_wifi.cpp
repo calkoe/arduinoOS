@@ -1,3 +1,5 @@
+#if defined ESP8266
+
 #include "arduinoOS_wifi.h"
 
 //Global
@@ -10,8 +12,13 @@ String ArduinoOS_wifi::sta_gateway;
 String ArduinoOS_wifi::sta_dns;
 bool   ArduinoOS_wifi::ap_enabled{false};
 String ArduinoOS_wifi::ap_password;
+bool   ArduinoOS_wifi::enableTelnet{true};
+bool   ArduinoOS_wifi::telnetBlock{false};
+WiFiServer ArduinoOS_wifi::TelnetServer(23);
+WiFiClient ArduinoOS_wifi::TelnetClient[MAX_TELNET_CLIENTS];
 ArduinoOS_wifi::ArduinoOS_wifi(HardwareSerial& Serial, unsigned int baud):
     ArduinoOS(Serial,baud){
+    addVariable("telnet/enabled",    enableTelnet);
     addVariable("wifi/enabled",      sta_enabled);
     addVariable("wifi/network",      sta_network);
     addVariable("wifi/password",     sta_password);
@@ -29,10 +36,60 @@ ArduinoOS_wifi::ArduinoOS_wifi(HardwareSerial& Serial, unsigned int baud):
 void ArduinoOS_wifi::begin(){
     ArduinoOS::begin();
     wifi_config(0);
+    if(enableTelnet){
+        listenEvent("o",telnetOut);
+        TelnetServer.begin();
+        TelnetServer.setNoDelay(true);
+    }
 };
 void ArduinoOS_wifi::loop(){
     ArduinoOS::loop();
+    telnetLoop();
 }
+
+//Telnet
+void ArduinoOS_wifi::telnetLoop(){
+  // Cleanup disconnected session
+  for(uint8_t i{0}; i < MAX_TELNET_CLIENTS; i++)
+    if (TelnetClient[i] && !TelnetClient[i].connected())
+        TelnetClient[i].stop();
+  // Check new client connections
+  if (TelnetServer.hasClient()){
+    for(uint8_t i{0}; i < MAX_TELNET_CLIENTS; i++){
+      if (!TelnetClient[i]){
+        TelnetClient[i] = TelnetServer.available(); 
+        TelnetClient[i].flush();
+        o(0x07,false);
+        p(textEscClear);
+        p(textWelcome);
+        listCommands();
+        terminalNl();
+        break;
+      };
+    };
+  };
+  //Get Message
+  for(uint8_t i{0}; i < MAX_TELNET_CLIENTS; i++)
+    if (TelnetClient[i] && TelnetClient[i].connected())
+        while(TelnetClient[i].available()){
+            while(TelnetClient[i].available()){
+                char c{TelnetClient[i].read()};
+                if(!charEsc(c)){
+                    telnetBlock=true;
+                    o(c,false); 
+                    telnetBlock=false;
+                    charIn(c);
+                }
+            }
+            delay(5);
+        };
+};
+void ArduinoOS_wifi::telnetOut(void* value){
+    if(telnetBlock) return;
+    for(uint8_t i{0}; i < MAX_TELNET_CLIENTS; i++)
+        if (TelnetClient[i] || TelnetClient[i].connected())
+            TelnetClient[i].print((char*)value);
+};
 
 //Interface Methods
 void ArduinoOS_wifi::wifi_status(char**,uint8_t){
@@ -99,12 +156,12 @@ void ArduinoOS_wifi::wifi_config(uint8_t s){
         WiFi.mode(WIFI_OFF);
         WiFi.setAutoConnect(true);
         WiFi.persistent(false); 
+        WiFi.hostname(aos_hostname); 
         //wifi_set_sleep_type(NONE_SLEEP_T); //https://blog.creations.de/?p=149
     };
 
     if(s == 0 || s == 1){
         if(sta_enabled){
-            WiFi.hostname(aos_hostname); 
             if(sta_ip && sta_subnet && sta_gateway && sta_dns){
                 IPAddress wifiIp;
                 IPAddress wifiDns;
@@ -122,7 +179,7 @@ void ArduinoOS_wifi::wifi_config(uint8_t s){
             WiFi.mode(WIFI_OFF);
     }
 
-    if(s == 0 || s == 2){
+    if(s == 0 || s == 1 || s == 2){
         if(ap_enabled){
             WiFi.softAPConfig(IPAddress(192, 168, 100, 1), IPAddress(192, 168, 100, 1), IPAddress(255, 255, 255, 0));
             WiFi.softAP(aos_hostname,ap_password);
@@ -184,3 +241,6 @@ void ArduinoOS_wifi::sta_ping(char** c,uint8_t n){
         };
     };
 };
+
+
+#endif

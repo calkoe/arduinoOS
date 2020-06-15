@@ -20,15 +20,16 @@ bool                ArduinoOS::autoReset{true};
 bool                ArduinoOS::locked{false};
 String              ArduinoOS::aos_date{__DATE__ " " __TIME__};
 String              ArduinoOS::aos_date_temp{aos_date};
-String              ArduinoOS::aos_hostname{"ardionoOS"};
+String              ArduinoOS::aos_hostname{"arduinoOS"};
 String              ArduinoOS::aos_user{"root"};
 String              ArduinoOS::aos_password{"root"};
 ArduinoOS::ArduinoOS(HardwareSerial& Serial,unsigned int baud){
     serialInstance  = &Serial;
     if(enableSerial) serialInstance->begin(baud);
-    addVariable("sys/date", aos_date,"",true,false);
-    addVariable("sys/user", aos_user,"",false,false);
-    addVariable("sys/password", aos_password,"",true,false);
+    addVariable("sys/date", aos_date,"",true,true);
+    addVariable("sys/hostname", aos_hostname,"");
+    addVariable("sys/user", aos_user,"");
+    addVariable("sys/password", aos_password,"");
     addCommand("gpio",aos_gpio,"🖥  gpio [w|r] [pin] [0|1]");
     addCommand("help",aos_help,"",true);
     addCommand("load",aos_load,"",true);
@@ -47,7 +48,7 @@ void ArduinoOS::begin(){
         EEPROM.begin(EEPROM_SIZE);
     #endif
     if(autoLoad) loadVariables();
-    o(0x07,false,true);
+    o(0x07,false);
     p(textEscClear);
     p(textWelcome);
     listCommands();
@@ -56,8 +57,13 @@ void ArduinoOS::begin(){
 void ArduinoOS::loop(){
     //Read Serial
     while(Serial.available()){
-        while(Serial.available())  
-            charIn(Serial.read());
+        while(Serial.available()){
+            char c{Serial.read()};
+            if(!charEsc(c)){
+                o(c,false); 
+                charIn(c);
+            }
+        }
         delay(5);
     }
     //Watchdog
@@ -67,8 +73,8 @@ void ArduinoOS::loop(){
 };
 
 //Events
-void ArduinoOS::listenEvent(char* name,void (*function)(char)){
-    AOS_EVT* e = new AOS_EVT{name,function,false,0,nullptr};
+void ArduinoOS::listenEvent(char* name,void (*function)(void*)){
+    AOS_EVT* e = new AOS_EVT{name,function,false,nullptr,nullptr};
     if(aos_evt == nullptr){
         aos_evt = e;
     }else{
@@ -77,15 +83,15 @@ void ArduinoOS::listenEvent(char* name,void (*function)(char)){
         i->aos_evt = e;
     }
 };
-void ArduinoOS::emitEvent(char* name,char payload,bool now){
+void ArduinoOS::emitEvent(char* name,void* value,bool now){
     AOS_EVT* i{aos_evt};
     while(i != nullptr){
         if(i->name == name){
             if(now){
-                (*(i->function))(payload);
+                (*(i->function))(value);
                 i->active  = false;
             }else{
-                i->payload = payload;
+                i->value   = value;
                 i->active  = true;
             }
         }
@@ -97,7 +103,7 @@ void ArduinoOS::loopEvent(){
     AOS_EVT* i{aos_evt};
     while(i != nullptr){
         if(i->active){
-            (*(i->function))(i->payload);
+            (*(i->function))(i->value);
             i->active = false;
         }
         i = i->aos_evt;
@@ -260,42 +266,42 @@ void ArduinoOS::loadVariables(bool save){
 };
 
 //Interface
-void ArduinoOS::o(const char c,bool nl, bool esc){
-    char caBuffer[2] = {c,0};o(caBuffer,nl,esc);
+void ArduinoOS::o(const char* ca,bool nl){
+    if(enableSerial){
+        serialInstance->print(ca);   
+        if(nl) serialInstance->print("\r\n");
+    }
+    emitEvent("o",(void*)ca,true);
+    if(nl) emitEvent("o",(char*)"\r\n",true);
 };
-void ArduinoOS::o(const char* ca,bool nl, bool esc){
-    if(nl)  serialInstance->println(ca);   else    serialInstance->print(ca);
+void ArduinoOS::o(const char c,bool nl){
+    char caBuffer[2] = {c,0};o(caBuffer,nl);
 };
-void ArduinoOS::o(String s,bool nl, bool esc){
-    if(nl)  serialInstance->println(s);   else    serialInstance->print(s);
+void ArduinoOS::o(String s,bool nl){
+    o(s.c_str(),nl);
 };
-void ArduinoOS::p(const char* ca,bool nl, bool esc){
+void ArduinoOS::p(const char* ca,bool nl){
     char caBuffer[2] = {0,0};
     for (unsigned int k = 0; k < strlen_P(ca); k++){
         caBuffer[0] = pgm_read_byte_near(ca + k);
-        o(caBuffer,false,esc);
-    }o("",nl,esc);
+        o(caBuffer,false);
+    }o("",nl);
 };
 void ArduinoOS::charIn(char c){
-        static char charIOBufferLast;
-        if(charEsc(c)) return;
         if(c == 0x7F || c == 0x08){                                     //DEL BACKSPACE
             if(charIOBufferPos > 0){
-                o(0x08,false,true);                                     //BACKSPACE
-                o(0x20,false,true);                                     //SPACE
-                o(0x08,false,true);                                     //BACKSPACE
+                o(0x08,false);                                          //BACKSPACE
+                o(0x20,false);                                          //SPACE
+                o(0x08,false);                                          //BACKSPACE
                 charIOBuffer[--charIOBufferPos] = 0;
             }else{
-                o(0x07,false,true);                                     //BELL
+                o(0x07,false);                                          //BELL
             }
-        }else if(c == 0x09){                                            //TAB
-        }
+        }else if(c == 0x09){}                                           //TAB
         else if(c != 0x0A && c != 0x0D && charIOBufferPos < LONG-1){    //NL+CR
-            if(serialEcho) o(c,false);
             charIOBuffer[charIOBufferPos++] = c;
-        }else{
-            if((c == 0x0A && charIOBufferLast == 0x0D) || (c == 0x0D && charIOBufferLast == 0x0A)) return;
-            o("",true,true);
+        }else if(c == 0x0D){
+            o(0x0A,false);
             if(!strcmp(charIOBuffer,"logout")) locked = true;
             if(charIOBufferPos>0 && !locked){
                 strcpy(terminalHistory,charIOBuffer);
@@ -305,7 +311,6 @@ void ArduinoOS::charIn(char c){
             charIOBufferPos=0;
             terminalNl();
         }
-    charIOBufferLast = c;
 };
 bool ArduinoOS::charEsc(char c){
     static AOS_ESC charInEsc{ESC_STATE_NONE};
@@ -320,20 +325,25 @@ bool ArduinoOS::charEsc(char c){
         }else
             charInEsc = ESC_STATE_NONE;
     }else if(charInEsc == ESC_STATE_CODE){
-        if(c == 0x41){          // A    Cursor Up
-            terminalHandleHistory(true);
-            charInEsc = ESC_STATE_NONE;
-        }else if(c == 0x42){    // B    Cursor Down
-            terminalHandleHistory(false);
-            charInEsc = ESC_STATE_NONE;
-        }else if(c == 0x43){    // C    Cursor Right
-            charInEsc = ESC_STATE_NONE;
-        }else if(c == 0x44){    // D    Cursor Left
-            charInEsc = ESC_STATE_NONE;
-        }else if(c == 0x30){    // 0    Response: terminal is OK 
-        }else if(c == 0x6e){    // n    Escape Closing
-            charInEsc = ESC_STATE_NONE;
-        }
+        switch(c){
+            case 0x41:  //Cursor Up
+                terminalHandleHistory(true);
+                break;
+            case 0x42:  //Cursor Down
+                terminalHandleHistory(false);
+                break;
+            /*
+            case 0x43:  //Cursor Right
+                break;
+            case 0x44:  //Cursor Left
+                break;
+            case 0x30:  //Cursor OK
+                break;
+            case 0x6e:  //Cursor Closing
+                break;
+            */
+        };
+        charInEsc = ESC_STATE_NONE;
         ret = true;
     }
     return ret;
@@ -351,7 +361,7 @@ void ArduinoOS::terminalNl(){
     clearBuffer(charIOBuffer,LONG);
 }
 void ArduinoOS::terminalHandleHistory(bool u){
-    o("\33[2K",false,true);o(0x0D,false,true);
+    o("\33[2K",false);o(0x0D,false);
     if(u){
         snprintf(charIOBuffer,LONG,"%s:/>%s",aos_user.c_str(),terminalHistory);o(charIOBuffer,false);
         strcpy(charIOBuffer,terminalHistory);

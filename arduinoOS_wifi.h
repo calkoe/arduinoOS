@@ -1,7 +1,11 @@
+#if defined ESP8266
+
 #include "arduinoOS.h"
 #include <ESP8266WiFi.h> 
 
 #pragma once
+
+#define MAX_TELNET_CLIENTS 2
 
 class ArduinoOS_wifi : public ArduinoOS{
 
@@ -12,10 +16,17 @@ class ArduinoOS_wifi : public ArduinoOS{
         static void wifi_config(uint8_t);
         static int  calcRSSI(int);
 
-        //Commands
+        //Interface
         static void sta_scan(char**,uint8_t);
         static void sta_connect(char**,uint8_t);
         static void sta_ping(char**,uint8_t);
+
+        //Telnet
+        static void telnetLoop();
+        static void telnetOut(void*);
+        static bool telnetBlock;
+        static WiFiServer TelnetServer;
+        static WiFiClient TelnetClient[];
 
     public:
 
@@ -25,6 +36,7 @@ class ArduinoOS_wifi : public ArduinoOS{
         static void loop();
 
         //Settings
+        static bool   enableTelnet;
         static bool   sta_enabled;
         static String sta_network;
         static String sta_password;
@@ -37,3 +49,5 @@ class ArduinoOS_wifi : public ArduinoOS{
         static String ap_password;
 
 };
+
+#endif

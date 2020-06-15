@@ -9,7 +9,7 @@
 * Enables access to application-functions
 * Int, Double and String datatypes supported for parameter
 * Robust design with no Heap-Fragmentation
-* Small footprint (770 Bytes of SRAM)
+* Small footprint (<770 Bytes of SRAM)
 
 **Terminal:**
 ```
@@ -112,7 +112,8 @@ void loop()
 <br/><br/>
 **Roadmap:**
 <img src="img/plugins.png" width="25" align="right"/>
-- [ ] Allow WIFI-Config on ESP8266
+- [x] Allow WIFI-Config on ESP8266
+- [x] Telnet Server on ESP8266
 - [ ] Allow MQTT-Config on ESP8266
 - [ ] Allow NTP-Config on ESP8266
 

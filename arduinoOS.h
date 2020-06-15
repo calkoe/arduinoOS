@@ -2,7 +2,7 @@
 //  arduinoOS.h
 //  V1.1
 //
-//  Created by Calvin Köcher on 09.01.20.
+//  Created by Calvin Köcher on 15.06.20.
 //  Copyright © 2020 Calvin Köcher. All rights reserved.
 //  https://github.com/calkoe/arduinoOS
 //
@@ -11,7 +11,7 @@
 #include <arduino.h>
 #include <EEPROM.h>
 
-#if defined ESP8266 || defined ESP32 
+#if defined ESP8266
     #define EEPROM_SIZE         1024    //Only for ESP
     #define SHORT               128     //Programm Parameter, Parameter Count
     #define LONG                128     //BufferIn, BufferOut, TerminalHistory
@@ -61,19 +61,18 @@ class ArduinoOS{
         };
         struct AOS_EVT {
             char*       name;
-            void        (*function)(char);
+            void        (*function)(void*);
             bool        active;
-            char        payload;
+            void*       value;
             AOS_EVT*    aos_evt;
         };
         static bool            isBegin;
-        static HardwareSerial* serialInstance;
         static AOS_CMD*        aos_cmd;
         static AOS_VAR*        aos_var;
         static AOS_EVT*        aos_evt;
         static uint8_t         status;
         
-        //Commands
+        //Interface
         static int  freeMemory();
         static void aos_gpio(char**,uint8_t);
         static void aos_help(char**,uint8_t);
@@ -86,16 +85,11 @@ class ArduinoOS{
         static void aos_reboot(char**,uint8_t);
         static void aos_reset(char**,uint8_t);
 
-        //Interface
+        //IO
         static unsigned charIOBufferPos;
         static char    terminalHistory[LONG];
         static bool    _addVariable(char*,void*,char*,bool,bool,AOS_DT);
-        static void    charIn(char);
-        static bool    charEsc(char);
-        static void    clearBuffer(char*,unsigned int);
-        static void    terminalNl();
-        static void    terminalHandleHistory(bool);
-        static void    terminalParseCommand();
+        
         
     public:   
 
@@ -106,6 +100,7 @@ class ArduinoOS{
         static char    charIOBuffer[LONG];
 
         //Settings
+        static HardwareSerial* serialInstance;
         static uint8_t     statusLed;
         static unsigned    usedEeprom;
         static bool        serialEcho;
@@ -121,8 +116,8 @@ class ArduinoOS{
         static String      aos_password;
 
         //Events
-        static void    listenEvent(char*,void (*)(char));
-        static void    emitEvent(char*,char,bool = false);
+        static void    listenEvent(char*,void(*)(void*));
+        static void    emitEvent(char*,void*,bool = false);
         static void    loopEvent();
 
         //Commands
@@ -141,10 +136,16 @@ class ArduinoOS{
         static void*   getValue(char*);
         static void    loadVariables(bool = false);
 
-        //Print
-        static void    o(const char,bool=true,bool=false);
-        static void    o(const char*,bool=true,bool=false);
-        static void    o(String,bool=true,bool=false);
-        static void    p(const char*,bool=true,bool=false);
+        //IO
+        static void    o(const char,bool=true);
+        static void    o(const char*,bool=true);
+        static void    o(String,bool=true);
+        static void    p(const char*,bool=true);
+        static void    charIn(char);
+        static bool    charEsc(char);
+        static void    clearBuffer(char*,unsigned int);
+        static void    terminalHandleHistory(bool);
+        static void    terminalParseCommand();
+        static void    terminalNl();
 
 };

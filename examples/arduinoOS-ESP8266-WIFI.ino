@@ -1,5 +1,5 @@
-#include <arduinoOS.h>
-ArduinoOS aos{Serial};
+#include <arduinoOS_wifi.h>
+ArduinoOS_wifi aos{Serial};
 
 bool    demoBool{true};
 int     demoInt{1234};
@@ -7,10 +7,10 @@ double  demoDouble{1234.1234};
 String  demoString{"DEMO"};
 
 void demo(char** param,uint8_t parCnt){
-    Serial.println("Hello from Demo Function");
-    Serial.println("Parameter count: " + (String)parCnt);
+    aos.o("Hello from Demo Function",true);
+    aos.o("Parameter count: " + (String)parCnt),true;
     for(int i{0};i<parCnt;i++){
-        Serial.println("- " + (String)param[i]);
+        aos.o("- " + (String)param[i],true);
     }
 }
 
