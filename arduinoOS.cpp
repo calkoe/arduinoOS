@@ -1,26 +1,47 @@
 #include <arduinoOS.h>
-ArduinoOS aos;
 
 //Global
-ArduinoOS::ArduinoOS(){
+bool                ArduinoOS::isBegin = false;
+HardwareSerial*     ArduinoOS::serialInstance{nullptr};
+ArduinoOS::AOS_CMD* ArduinoOS::aos_cmd{nullptr};
+ArduinoOS::AOS_VAR* ArduinoOS::aos_var{nullptr};
+ArduinoOS::AOS_EVT* ArduinoOS::aos_evt{nullptr};
+unsigned            ArduinoOS::charIOBufferPos{0};
+char                ArduinoOS::terminalHistory[LONG];
+char                ArduinoOS::charIOBuffer[LONG];
+uint8_t             ArduinoOS::status{0};
+uint8_t             ArduinoOS::statusLed{0};
+unsigned            ArduinoOS::usedEeprom{0};
+bool                ArduinoOS::serialEcho{true};
+bool                ArduinoOS::enableWatchdog{true};
+bool                ArduinoOS::enableSerial{true};
+bool                ArduinoOS::autoLoad{true};
+bool                ArduinoOS::autoReset{true};
+bool                ArduinoOS::locked{false};
+String              ArduinoOS::aos_date{__DATE__ " " __TIME__};
+String              ArduinoOS::aos_date_temp{aos_date};
+String              ArduinoOS::aos_hostname{"ardionoOS"};
+String              ArduinoOS::aos_user{"root"};
+String              ArduinoOS::aos_password{"root"};
+ArduinoOS::ArduinoOS(HardwareSerial& Serial,unsigned int baud){
+    serialInstance  = &Serial;
+    if(enableSerial) serialInstance->begin(baud);
     addVariable("sys/date", aos_date,"",true,false);
     addVariable("sys/user", aos_user,"",false,false);
     addVariable("sys/password", aos_password,"",true,false);
-    addCommand("gpio",aos_gpio,"🖥 gpio [w|r] [pin] [0|1]");
+    addCommand("gpio",aos_gpio,"🖥  gpio [w|r] [pin] [0|1]");
     addCommand("help",aos_help,"",true);
     addCommand("load",aos_load,"",true);
     addCommand("save",aos_save,"",true);
-    addCommand("get",aos_get,"🖥 get [filter]");
-    addCommand("set",aos_set,"🖥 set [par] [val]");
+    addCommand("get",aos_get,"🖥  get [filter]");
+    addCommand("set",aos_set,"🖥  set [par] [val]");
     addCommand("status",aos_stats,"🖥");
     addCommand("clear",aos_clear,"",true);
     addCommand("reboot",aos_reboot,"",true);
     addCommand("reset",aos_reset,"",true);
 }
-void ArduinoOS::begin(HardwareSerial& Serial,unsigned int baud){
+void ArduinoOS::begin(){
     isBegin         = true;
-    serialInstance  = &Serial;
-    if(enableSerial) serialInstance->begin(baud);
     if(enableWatchdog) wdt_enable(WDTO_4S);
     #if defined ESP8266 || defined ESP32 
         EEPROM.begin(EEPROM_SIZE);
@@ -173,7 +194,7 @@ bool ArduinoOS::setVariable(char* name,char* value){
     while(i != nullptr){
         if(!strcmp(i->name,name)){
             if(i->protect) return false;
-            if(i->aos_dt==AOS_DT_BOOL)      *(bool*)(i->value)   = (!strcmp(i->name,"1") || !strcmp(i->name,"true")) ? true : false;
+            if(i->aos_dt==AOS_DT_BOOL)      *(bool*)(i->value)   = (!strcmp(value,"1") || !strcmp(value,"true")) ? true : false;
             if(i->aos_dt==AOS_DT_INT)       *(int*)(i->value)    = atoi(value);
             if(i->aos_dt==AOS_DT_DOUBLE)    *(double*)(i->value) = atof(value); 
             if(i->aos_dt==AOS_DT_STRING)    *(String*)(i->value) = value;
@@ -322,6 +343,7 @@ void ArduinoOS::clearBuffer(char* ca,unsigned int l){
 };
 void ArduinoOS::terminalNl(){
     if(locked){
+        delay(1000);
         p(textEnterPassword,false);
     }else{
         snprintf(charIOBuffer,LONG,"%s:/>",aos_user.c_str());o(charIOBuffer,false);

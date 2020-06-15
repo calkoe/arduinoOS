@@ -26,7 +26,7 @@
 
 //Text
 const char textErrorBegin[] PROGMEM         = "call addVariable() before begin() !";
-const char textWelcome[] PROGMEM            = "ArduinOS V1.1 - https://github.com/calkoe/arduinoOS\r\nget";
+const char textWelcome[] PROGMEM            = "ArduinOS V1.1 - https://github.com/calkoe/arduinoOS\r\n";
 const char textCommandNotFound[] PROGMEM    = "Command not found! Try 'help' for more information.";
 const char textInvalidParameter[] PROGMEM   = "Invalid parameter!";
 const char textEnterPassword[] PROGMEM      = "Please enter password: ";
@@ -40,6 +40,7 @@ class ArduinoOS{
     
     private:
 
+        //Global
         enum AOS_DT    { AOS_DT_BOOL, AOS_DT_INT, AOS_DT_DOUBLE, AOS_DT_STRING };
         enum AOS_ESC   { ESC_STATE_NONE, ESC_STATE_START, ESC_STATE_CODE};
         struct AOS_CMD {
@@ -65,75 +66,15 @@ class ArduinoOS{
             char        payload;
             AOS_EVT*    aos_evt;
         };
-        bool            isBegin{false};
-        HardwareSerial* serialInstance;
-        AOS_CMD*        aos_cmd{nullptr};
-        AOS_VAR*        aos_var{nullptr};
-        AOS_EVT*        aos_evt{nullptr};
-
+        static bool            isBegin;
+        static HardwareSerial* serialInstance;
+        static AOS_CMD*        aos_cmd;
+        static AOS_VAR*        aos_var;
+        static AOS_EVT*        aos_evt;
+        static uint8_t         status;
         
-        unsigned        charIOBufferPos{0};
-        char            terminalHistory[LONG];
-        bool            _addVariable(char*,void*,char*,bool,bool,AOS_DT);
-        
-    public:   
-
-        //Global
-        ArduinoOS();
-        void    begin(HardwareSerial&, unsigned int = SERSPEED);
-        void    loop();
-        char    charIOBuffer[LONG];
-
-        //Settings
-        unsigned    usedEeprom{0};
-        bool        serialEcho{true};
-        bool        enableWatchdog{true};
-        bool        enableSerial{true};
-        bool        autoLoad{true};
-        bool        autoReset{true};
-        bool        locked{false};
-        String      aos_date{__DATE__ " " __TIME__};
-        String      aos_date_temp = aos_date;
-        String      aos_hostname{"arduinoOS"};
-        String      aos_user{"root"};
-        String      aos_password{"root"};
-
-        //Events
-        void    listenEvent(char*,void (*)(char));
-        void    emitEvent(char*,char,bool = false);
-        void    loopEvent();
-
         //Commands
-        bool    addCommand(char*,void (*)(char**, uint8_t),char* = "",bool = false);
-        void    listCommands(char* = "");
-        void    manCommand(char*);
-        bool    callCommand(char*,char** = 0, uint8_t = 0);
-
-        //Variables
-        bool    addVariable(char*,bool&,  char* = "",bool = false,bool = false);
-        bool    addVariable(char*,int&,   char* = "",bool = false,bool = false);
-        bool    addVariable(char*,double&,char* = "",bool = false,bool = false);
-        bool    addVariable(char*,String&,char* = "",bool = false,bool = false);
-        void    listVariables(char* = "");
-        bool    setVariable(char*,char*);
-        void*   getValue(char*);
-        void    loadVariables(bool = false);
-
-        //Interface
-        void    o(const char,bool=true,bool=false);
-        void    o(const char*,bool=true,bool=false);
-        void    o(String,bool=true,bool=false);
-        void    p(const char*,bool=true,bool=false);
-
-        void    charIn(char);
-        bool    charEsc(char);
-        void    clearBuffer(char*,unsigned int);
-        void    terminalNl();
-        void    terminalHandleHistory(bool);
-        void    terminalParseCommand();
-
-        //Default Commands
-        int    freeMemory();
+        static int  freeMemory();
         static void aos_gpio(char**,uint8_t);
         static void aos_help(char**,uint8_t);
         static void aos_load(char**,uint8_t);
@@ -145,6 +86,65 @@ class ArduinoOS{
         static void aos_reboot(char**,uint8_t);
         static void aos_reset(char**,uint8_t);
 
-};
+        //Interface
+        static unsigned charIOBufferPos;
+        static char    terminalHistory[LONG];
+        static bool    _addVariable(char*,void*,char*,bool,bool,AOS_DT);
+        static void    charIn(char);
+        static bool    charEsc(char);
+        static void    clearBuffer(char*,unsigned int);
+        static void    terminalNl();
+        static void    terminalHandleHistory(bool);
+        static void    terminalParseCommand();
+        
+    public:   
 
-extern ArduinoOS aos;
+        //Global
+        ArduinoOS(HardwareSerial&, unsigned int = SERSPEED);
+        static void    begin();
+        static void    loop();
+        static char    charIOBuffer[LONG];
+
+        //Settings
+        static uint8_t     statusLed;
+        static unsigned    usedEeprom;
+        static bool        serialEcho;
+        static bool        enableWatchdog;
+        static bool        enableSerial;
+        static bool        autoLoad;
+        static bool        autoReset;
+        static bool        locked;
+        static String      aos_date;
+        static String      aos_date_temp;
+        static String      aos_hostname;
+        static String      aos_user;
+        static String      aos_password;
+
+        //Events
+        static void    listenEvent(char*,void (*)(char));
+        static void    emitEvent(char*,char,bool = false);
+        static void    loopEvent();
+
+        //Commands
+        static bool    addCommand(char*,void (*)(char**, uint8_t),char* = "",bool = false);
+        static void    listCommands(char* = "");
+        static void    manCommand(char*);
+        static bool    callCommand(char*,char** = 0, uint8_t = 0);
+
+        //Variables
+        static bool    addVariable(char*,bool&,  char* = "",bool = false,bool = false);
+        static bool    addVariable(char*,int&,   char* = "",bool = false,bool = false);
+        static bool    addVariable(char*,double&,char* = "",bool = false,bool = false);
+        static bool    addVariable(char*,String&,char* = "",bool = false,bool = false);
+        static void    listVariables(char* = "");
+        static bool    setVariable(char*,char*);
+        static void*   getValue(char*);
+        static void    loadVariables(bool = false);
+
+        //Print
+        static void    o(const char,bool=true,bool=false);
+        static void    o(const char*,bool=true,bool=false);
+        static void    o(String,bool=true,bool=false);
+        static void    p(const char*,bool=true,bool=false);
+
+};

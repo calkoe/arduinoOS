@@ -25,8 +25,8 @@ int ArduinoOS::freeMemory() {
 //Interface Methods
 void ArduinoOS::aos_gpio(char** param,uint8_t parCnt){
     if(parCnt < 3 || parCnt > 4 ){
-        aos.p(textInvalidParameter);
-        aos.manCommand("gpio");
+        p(textInvalidParameter);
+        manCommand("gpio");
         return;
     }
     if(strstr(param[1],"w")){
@@ -36,60 +36,60 @@ void ArduinoOS::aos_gpio(char** param,uint8_t parCnt){
     if(strstr(param[1],"r")){
         pinMode(atoi(param[2]),INPUT);
         if(digitalRead(atoi(param[2])))
-            aos.o("1"); 
+            o("1"); 
         else
-            aos.o("0"); 
+            o("0"); 
     }
 }
 void ArduinoOS::aos_help(char** param,uint8_t parCnt){
     if(parCnt == 1)
-      aos.listCommands();
+      listCommands();
     if(parCnt == 2)
-      aos.listCommands(param[1]);
+      listCommands(param[1]);
 };
 void ArduinoOS::aos_load(char** param,uint8_t parCnt){
-    aos.loadVariables(false);
-    aos.p(textOk);
+    loadVariables(false);
+    p(textOk);
 };
 void ArduinoOS::aos_save(char** param,uint8_t parCnt){
-    aos.loadVariables(true);
-    aos.p(textOk);
+    loadVariables(true);
+    p(textOk);
 };
 void ArduinoOS::aos_get(char** param,uint8_t parCnt){
     if(parCnt == 2)
-        aos.listVariables(param[1]);
+        listVariables(param[1]);
     else
-        aos.listVariables();
+        listVariables();
 };
 void ArduinoOS::aos_set(char** param,uint8_t parCnt){
     if(parCnt != 3){
-        aos.p(textInvalidParameter);
-        aos.manCommand("set");
+        p(textInvalidParameter);
+        manCommand("set");
         return;
     }
-    if(aos.setVariable(param[1],param[2])){
-      aos.loadVariables(true);
-      aos.p(textOk);
+    if(setVariable(param[1],param[2])){
+      loadVariables(true);
+      p(textOk);
     }else{
-      aos.p(textNotFound); 
+      p(textNotFound); 
     } 
 };
 void ArduinoOS::aos_stats(char** param,uint8_t parCnt){
-    snprintf(aos.charIOBuffer,LONG,"%-20s : %s","COMPILED",aos.aos_date.c_str());aos.o(aos.charIOBuffer);
-    snprintf(aos.charIOBuffer,LONG,"%-20s : %d B","HEAP",aos.freeMemory());aos.o(aos.charIOBuffer);
-    snprintf(aos.charIOBuffer,LONG,"%-20s : %d B","EERPOM",aos.usedEeprom);aos.o(aos.charIOBuffer);
+    snprintf(charIOBuffer,LONG,"%-20s : %s","COMPILED",aos_date.c_str());o(charIOBuffer);
+    snprintf(charIOBuffer,LONG,"%-20s : %d B","HEAP",freeMemory());o(charIOBuffer);
+    snprintf(charIOBuffer,LONG,"%-20s : %d B","EERPOM",usedEeprom);o(charIOBuffer);
 };
 void ArduinoOS::aos_clear(char** param,uint8_t parCnt){
-    aos.p(textEscClear);
+    p(textEscClear);
 };
 void ArduinoOS::aos_reboot(char** param,uint8_t parCnt){
     #if defined ESP8266
       ESP.restart();
     #endif
-    for(int i{0};;i++){aos.o('.',false);delay(333);}
+    for(int i{0};;i++){o('.',false);delay(333);}
 };
 void ArduinoOS::aos_reset(char** param,uint8_t parCnt){
-    aos.aos_date = "";
-    aos.loadVariables(true);
+    aos_date = "";
+    loadVariables(true);
     aos_reboot(0,0);
 }
