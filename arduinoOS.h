@@ -26,7 +26,7 @@
 
 //Text
 const char textErrorBegin[] PROGMEM         = "call addVariable() before begin() !";
-const char textWelcome[] PROGMEM            = "ArduinOS V1.1 - https://github.com/calkoe/arduinoOS\r\n\r\n";
+const char textWelcome[] PROGMEM            = "ArduinOS V1.1 - https://github.com/calkoe/arduinoOS\r\nget";
 const char textCommandNotFound[] PROGMEM    = "Command not found! Try 'help' for more information.";
 const char textInvalidParameter[] PROGMEM   = "Invalid parameter!";
 const char textEnterPassword[] PROGMEM      = "Please enter password: ";
@@ -94,7 +94,8 @@ class ArduinoOS{
         bool        locked{false};
         String      aos_date{__DATE__ " " __TIME__};
         String      aos_date_temp = aos_date;
-        String      aos_name{"root"};
+        String      aos_hostname{"arduinoOS"};
+        String      aos_user{"root"};
         String      aos_password{"root"};
 
         //Events
@@ -115,7 +116,7 @@ class ArduinoOS{
         bool    addVariable(char*,String&,char* = "",bool = false,bool = false);
         void    listVariables(char* = "");
         bool    setVariable(char*,char*);
-        bool    getVariable(char*,char*);
+        void*   getValue(char*);
         void    loadVariables(bool = false);
 
         //Interface

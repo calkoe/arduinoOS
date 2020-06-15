@@ -56,14 +56,10 @@ void ArduinoOS::aos_save(char** param,uint8_t parCnt){
     aos.p(textOk);
 };
 void ArduinoOS::aos_get(char** param,uint8_t parCnt){
-    char b[SHORT];
-    if(parCnt == 2){
-      if(aos.getVariable(param[1],b))
-        aos.o(b);
-      else
+    if(parCnt == 2)
         aos.listVariables(param[1]);
-    }else
-      aos.listVariables();
+    else
+        aos.listVariables();
 };
 void ArduinoOS::aos_set(char** param,uint8_t parCnt){
     if(parCnt != 3){
@@ -79,14 +75,17 @@ void ArduinoOS::aos_set(char** param,uint8_t parCnt){
     } 
 };
 void ArduinoOS::aos_stats(char** param,uint8_t parCnt){
-    snprintf(aos.charIOBuffer,LONG,"COMPILED: %s",aos.aos_date.c_str());aos.o(aos.charIOBuffer);
-    snprintf(aos.charIOBuffer,LONG,"    HEAP: %d B",aos.freeMemory());aos.o(aos.charIOBuffer);
-    snprintf(aos.charIOBuffer,LONG,"  EEPROM: %d B",aos.usedEeprom);aos.o(aos.charIOBuffer);
+    snprintf(aos.charIOBuffer,LONG,"%-20s : %s","COMPILED",aos.aos_date.c_str());aos.o(aos.charIOBuffer);
+    snprintf(aos.charIOBuffer,LONG,"%-20s : %d B","HEAP",aos.freeMemory());aos.o(aos.charIOBuffer);
+    snprintf(aos.charIOBuffer,LONG,"%-20s : %d B","EERPOM",aos.usedEeprom);aos.o(aos.charIOBuffer);
 };
 void ArduinoOS::aos_clear(char** param,uint8_t parCnt){
     aos.p(textEscClear);
 };
 void ArduinoOS::aos_reboot(char** param,uint8_t parCnt){
+    #if defined ESP8266
+      ESP.restart();
+    #endif
     for(int i{0};;i++){aos.o('.',false);delay(333);}
 };
 void ArduinoOS::aos_reset(char** param,uint8_t parCnt){
