@@ -62,7 +62,7 @@ void ArduinoOS::aos_get(char** param,uint8_t parCnt){
         listVariables();
 };
 void ArduinoOS::aos_set(char** param,uint8_t parCnt){
-    if(parCnt != 3){
+    if(parCnt < 2 || parCnt > 3){
         p(textInvalidParameter);
         manCommand("set");
         return;

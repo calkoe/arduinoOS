@@ -16,11 +16,13 @@
     #define SHORT               128     //Programm Parameter, Parameter Count
     #define LONG                128     //BufferIn, BufferOut, TerminalHistory
     #define SERSPEED            112500 
+    #define STATUSLED           16
 #else
     #include <avr/wdt.h>
     #define SHORT               16      //Programm Parameter, Parameter Count
     #define LONG                64      //IO Buffer
-   #define SERSPEED             9600 
+    #define SERSPEED            9600 
+    #define STATUSLED           0
 #endif
 
 
@@ -66,11 +68,12 @@ class ArduinoOS{
             void*       value;
             AOS_EVT*    aos_evt;
         };
-        static bool            isBegin;
-        static AOS_CMD*        aos_cmd;
-        static AOS_VAR*        aos_var;
-        static AOS_EVT*        aos_evt;
-        static uint8_t         status;
+        static bool             isBegin;
+        static AOS_CMD*         aos_cmd;
+        static AOS_VAR*         aos_var;
+        static AOS_EVT*         aos_evt;
+        static HardwareSerial*  serialInstance;
+        static unsigned         usedEeprom;
         
         //Interface
         static int  freeMemory();
@@ -100,9 +103,7 @@ class ArduinoOS{
         static char    charIOBuffer[LONG];
 
         //Settings
-        static HardwareSerial* serialInstance;
-        static uint8_t     statusLed;
-        static unsigned    usedEeprom;
+        static uint8_t     status;
         static bool        serialEcho;
         static bool        enableWatchdog;
         static bool        enableSerial;
@@ -114,6 +115,7 @@ class ArduinoOS{
         static String      aos_hostname;
         static String      aos_user;
         static String      aos_password;
+        static uint8_t     aos_statusLed;
 
         //Events
         static void    listenEvent(char*,void(*)(void*));
@@ -141,7 +143,7 @@ class ArduinoOS{
         static void    o(const char*,bool=true);
         static void    o(String,bool=true);
         static void    p(const char*,bool=true);
-        static void    charIn(char);
+        static void    charIn(char,bool=true);
         static bool    charEsc(char);
         static void    clearBuffer(char*,unsigned int);
         static void    terminalHandleHistory(bool);

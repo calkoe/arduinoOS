@@ -9,20 +9,20 @@ ArduinoOS::AOS_EVT* ArduinoOS::aos_evt{nullptr};
 unsigned            ArduinoOS::charIOBufferPos{0};
 char                ArduinoOS::terminalHistory[LONG];
 char                ArduinoOS::charIOBuffer[LONG];
-uint8_t             ArduinoOS::status{0};
-uint8_t             ArduinoOS::statusLed{0};
+uint8_t             ArduinoOS::status{1};
 unsigned            ArduinoOS::usedEeprom{0};
 bool                ArduinoOS::serialEcho{true};
 bool                ArduinoOS::enableWatchdog{true};
 bool                ArduinoOS::enableSerial{true};
 bool                ArduinoOS::autoLoad{true};
-bool                ArduinoOS::autoReset{true};
+bool                ArduinoOS::autoReset{false};
 bool                ArduinoOS::locked{false};
 String              ArduinoOS::aos_date{__DATE__ " " __TIME__};
 String              ArduinoOS::aos_date_temp{aos_date};
 String              ArduinoOS::aos_hostname{"arduinoOS"};
 String              ArduinoOS::aos_user{"root"};
 String              ArduinoOS::aos_password{"root"};
+uint8_t             ArduinoOS::aos_statusLed{STATUSLED};
 ArduinoOS::ArduinoOS(HardwareSerial& Serial,unsigned int baud){
     serialInstance  = &Serial;
     if(enableSerial) serialInstance->begin(baud);
@@ -47,7 +47,8 @@ void ArduinoOS::begin(){
     #if defined ESP8266 || defined ESP32 
         EEPROM.begin(EEPROM_SIZE);
     #endif
-    if(autoLoad) loadVariables();
+    if(aos_statusLed) pinMode(aos_statusLed,OUTPUT);
+    if(autoLoad)  loadVariables();
     o(0x07,false);
     p(textEscClear);
     p(textWelcome);
@@ -57,21 +58,27 @@ void ArduinoOS::begin(){
 void ArduinoOS::loop(){
     //Read Serial
     while(Serial.available()){
-        while(Serial.available()){
-            char c{Serial.read()};
-            if(!charEsc(c)){
-                o(c,false); 
-                charIn(c);
-            }
-        }
+        while(Serial.available())
+            charIn(Serial.read());
         delay(5);
     }
     //Watchdog
     wdt_reset();
     //Events
     loopEvent();
+    //Status LED
+    if(aos_statusLed){
+        static unsigned long t{0};
+        if(!status)          digitalWrite(aos_statusLed,1);
+        else if(status==5)   digitalWrite(aos_statusLed,0);
+        else if((unsigned long)(millis()-t)>=200&&(t=millis())){
+            static bool o{1};
+            static uint8_t p{0};
+            if(p<2*status) digitalWrite(aos_statusLed,o=!o);
+            if(p==10){p=0;o=1;}else p++;
+        }
+    };
 };
-
 //Events
 void ArduinoOS::listenEvent(char* name,void (*function)(void*)){
     AOS_EVT* e = new AOS_EVT{name,function,false,nullptr,nullptr};
@@ -200,10 +207,10 @@ bool ArduinoOS::setVariable(char* name,char* value){
     while(i != nullptr){
         if(!strcmp(i->name,name)){
             if(i->protect) return false;
-            if(i->aos_dt==AOS_DT_BOOL)      *(bool*)(i->value)   = (!strcmp(value,"1") || !strcmp(value,"true")) ? true : false;
-            if(i->aos_dt==AOS_DT_INT)       *(int*)(i->value)    = atoi(value);
-            if(i->aos_dt==AOS_DT_DOUBLE)    *(double*)(i->value) = atof(value); 
-            if(i->aos_dt==AOS_DT_STRING)    *(String*)(i->value) = value;
+            if(i->aos_dt==AOS_DT_BOOL)      *(bool*)(i->value)   = !value ? false   : (!strcmp(value,"1") || !strcmp(value,"true")) ? true : false;
+            if(i->aos_dt==AOS_DT_INT)       *(int*)(i->value)    = !value ? 0       : atoi(value);
+            if(i->aos_dt==AOS_DT_DOUBLE)    *(double*)(i->value) = !value ? 0.0     : atof(value); 
+            if(i->aos_dt==AOS_DT_STRING)    *(String*)(i->value) = !value ? 0       : value;
             return true;
         }
         i = i->aos_var;
@@ -287,21 +294,24 @@ void ArduinoOS::p(const char* ca,bool nl){
         o(caBuffer,false);
     }o("",nl);
 };
-void ArduinoOS::charIn(char c){
-        if(c == 0x7F || c == 0x08){                                     //DEL BACKSPACE
+void ArduinoOS::charIn(char c,bool echo){
+        if(c == 10) return;                                         //Filter NL
+        if(charEsc(c)) return;                                      //Filter ESC 
+        if(echo) o(c,false); 
+        if(c == 127 || c == 8){                                     //DEL BACKSPACE
             if(charIOBufferPos > 0){
-                o(0x08,false);                                          //BACKSPACE
-                o(0x20,false);                                          //SPACE
-                o(0x08,false);                                          //BACKSPACE
+                o(8,false);                                         //BACKSPACE
+                o(32,false);                                        //SPACE
+                o(8,false);                                         //BACKSPACE
                 charIOBuffer[--charIOBufferPos] = 0;
             }else{
-                o(0x07,false);                                          //BELL
+                o(7,false);                                         //BELL
             }
-        }else if(c == 0x09){}                                           //TAB
-        else if(c != 0x0A && c != 0x0D && charIOBufferPos < LONG-1){    //NL+CR
+        }else if(c == 0x09){}                                       //TAB
+        else if(c != 13 && charIOBufferPos < LONG-1){               //CR
             charIOBuffer[charIOBufferPos++] = c;
-        }else if(c == 0x0D){
-            o(0x0A,false);
+        }else{
+            if(echo) o(10,false);                                   //NL
             if(!strcmp(charIOBuffer,"logout")) locked = true;
             if(charIOBufferPos>0 && !locked){
                 strcpy(terminalHistory,charIOBuffer);
@@ -315,21 +325,21 @@ void ArduinoOS::charIn(char c){
 bool ArduinoOS::charEsc(char c){
     static AOS_ESC charInEsc{ESC_STATE_NONE};
     bool ret = false;
-    if(c == 27){
+    if(c == 27 || c == 255){
         charInEsc = ESC_STATE_START;
         ret = true;
     }else if(charInEsc == ESC_STATE_START){
-        if(c == 0x5B){
+        if(c == 91 || c == 251 || c == 253){
             charInEsc = ESC_STATE_CODE;
             ret = true;
         }else
             charInEsc = ESC_STATE_NONE;
     }else if(charInEsc == ESC_STATE_CODE){
         switch(c){
-            case 0x41:  //Cursor Up
+            case 65:  //Cursor Up
                 terminalHandleHistory(true);
                 break;
-            case 0x42:  //Cursor Down
+            case 66:  //Cursor Down
                 terminalHandleHistory(false);
                 break;
             /*
