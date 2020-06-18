@@ -12,11 +12,11 @@
 #include <EEPROM.h>
 
 #if defined ESP8266
-    #define EEPROM_SIZE         1024    //Only for ESP
     #define SHORT               128     //Programm Parameter, Parameter Count
     #define LONG                128     //BufferIn, BufferOut, TerminalHistory
     #define SERSPEED            112500 
     #define STATUSLED           16
+    #define EEPROM_SIZE         1024    //Only for ESP
 #else
     #include <avr/wdt.h>
     #define SHORT               16      //Programm Parameter, Parameter Count
@@ -72,8 +72,6 @@ class ArduinoOS{
         static AOS_CMD*         aos_cmd;
         static AOS_VAR*         aos_var;
         static AOS_EVT*         aos_evt;
-        static HardwareSerial*  serialInstance;
-        static unsigned         usedEeprom;
         
         //Interface
         static int  freeMemory();
@@ -97,25 +95,28 @@ class ArduinoOS{
     public:   
 
         //Global
-        ArduinoOS(HardwareSerial&, unsigned int = SERSPEED);
-        static void    begin();
-        static void    loop();
-        static char    charIOBuffer[LONG];
+        ArduinoOS();
+        static void             begin();
+        static void             loop();
+        static char             charIOBuffer[LONG];
+        static unsigned         usedEeprom;
 
         //Settings
-        static uint8_t     status;
-        static bool        serialEcho;
-        static bool        enableWatchdog;
-        static bool        enableSerial;
-        static bool        autoLoad;
-        static bool        autoReset;
-        static bool        locked;
-        static String      aos_date;
-        static String      aos_date_temp;
-        static String      aos_hostname;
-        static String      aos_user;
-        static String      aos_password;
-        static uint8_t     aos_statusLed;
+        static bool             enableSerial;
+        static HardwareSerial   serialInstance;
+        static bool             serialEcho;
+        static unsigned int     serialBaud;
+        static uint8_t          status;
+        static bool             enableWatchdog;
+        static bool             autoLoad;
+        static bool             autoReset;
+        static bool             locked;
+        static String           aos_date;
+        static String           aos_date_temp;
+        static String           aos_hostname;
+        static String           aos_user;
+        static String           aos_password;
+        static uint8_t          aos_statusLed;
 
         //Events
         static void    listenEvent(char*,void(*)(void*));

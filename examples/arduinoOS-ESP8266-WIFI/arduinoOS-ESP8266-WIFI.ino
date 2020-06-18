@@ -1,5 +1,5 @@
 #include <arduinoOS_wifi.h>
-ArduinoOS_wifi aos{Serial};
+ArduinoOS_wifi aos;
 
 bool    demoBool{true};
 int     demoInt{1234};

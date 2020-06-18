@@ -2,7 +2,7 @@
 
 //Global
 bool                ArduinoOS::isBegin = false;
-HardwareSerial*     ArduinoOS::serialInstance{nullptr};
+HardwareSerial      ArduinoOS::serialInstance{Serial};
 ArduinoOS::AOS_CMD* ArduinoOS::aos_cmd{nullptr};
 ArduinoOS::AOS_VAR* ArduinoOS::aos_var{nullptr};
 ArduinoOS::AOS_EVT* ArduinoOS::aos_evt{nullptr};
@@ -14,8 +14,9 @@ unsigned            ArduinoOS::usedEeprom{0};
 bool                ArduinoOS::serialEcho{true};
 bool                ArduinoOS::enableWatchdog{true};
 bool                ArduinoOS::enableSerial{true};
+unsigned int        ArduinoOS::serialBaud{SERSPEED};
 bool                ArduinoOS::autoLoad{true};
-bool                ArduinoOS::autoReset{false};
+bool                ArduinoOS::autoReset{true};
 bool                ArduinoOS::locked{false};
 String              ArduinoOS::aos_date{__DATE__ " " __TIME__};
 String              ArduinoOS::aos_date_temp{aos_date};
@@ -23,9 +24,7 @@ String              ArduinoOS::aos_hostname{"arduinoOS"};
 String              ArduinoOS::aos_user{"root"};
 String              ArduinoOS::aos_password{"root"};
 uint8_t             ArduinoOS::aos_statusLed{STATUSLED};
-ArduinoOS::ArduinoOS(HardwareSerial& Serial,unsigned int baud){
-    serialInstance  = &Serial;
-    if(enableSerial) serialInstance->begin(baud);
+ArduinoOS::ArduinoOS(){
     addVariable("sys/date", aos_date,"",true,true);
     addVariable("sys/hostname", aos_hostname,"");
     addVariable("sys/user", aos_user,"");
@@ -43,6 +42,7 @@ ArduinoOS::ArduinoOS(HardwareSerial& Serial,unsigned int baud){
 }
 void ArduinoOS::begin(){
     isBegin         = true;
+    if(enableSerial) serialInstance.begin(serialBaud);
     if(enableWatchdog) wdt_enable(WDTO_4S);
     #if defined ESP8266 || defined ESP32 
         EEPROM.begin(EEPROM_SIZE);
@@ -57,9 +57,9 @@ void ArduinoOS::begin(){
 };
 void ArduinoOS::loop(){
     //Read Serial
-    while(Serial.available()){
-        while(Serial.available())
-            charIn(Serial.read());
+    while(serialInstance.available()){
+        while(serialInstance.available())
+            charIn(serialInstance.read());
         delay(5);
     }
     //Watchdog
@@ -274,12 +274,9 @@ void ArduinoOS::loadVariables(bool save){
 
 //Interface
 void ArduinoOS::o(const char* ca,bool nl){
-    if(enableSerial){
-        serialInstance->print(ca);   
-        if(nl) serialInstance->print("\r\n");
-    }
+    if(enableSerial) serialInstance.print(ca);
     emitEvent("o",(void*)ca,true);
-    if(nl) emitEvent("o",(char*)"\r\n",true);
+    if(nl) o("\r\n",false);
 };
 void ArduinoOS::o(const char c,bool nl){
     char caBuffer[2] = {c,0};o(caBuffer,nl);
@@ -311,7 +308,7 @@ void ArduinoOS::charIn(char c,bool echo){
         else if(c != 13 && charIOBufferPos < LONG-1){               //CR
             charIOBuffer[charIOBufferPos++] = c;
         }else{
-            if(echo) o(10,false);                                   //NL
+            o(13,false);o(10,false);                                //CR + NL
             if(!strcmp(charIOBuffer,"logout")) locked = true;
             if(charIOBufferPos>0 && !locked){
                 strcpy(terminalHistory,charIOBuffer);

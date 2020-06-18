@@ -12,32 +12,31 @@ class ArduinoOS_wifi : public ArduinoOS{
     private:
 
         //Methods
-        static void config(uint8_t);
+        static bool config(uint8_t);
         static bool connected();
         static int  calcRSSI(int);
-
-        //Interface
-        static void interface_status(char**,uint8_t);
-        static void interface_scan(char**,uint8_t);
-        static void interface_apply(char**,uint8_t);
-        static void interface_ping(char**,uint8_t);
 
         //Telnet
         static void telnetLoop();
         static void telnetOut(void*);
-        static bool telnetBlock;
         static WiFiServer TelnetServer;
         static WiFiClient TelnetClient[];
+
+        //Interface
+        static void interface_status(char**,uint8_t);
+        static void interface_scan(char**,uint8_t);
+        static void interface_connect(char**,uint8_t);
+        static void interface_ping(char**,uint8_t);
 
     public:
 
         //Global
-        ArduinoOS_wifi(HardwareSerial&, unsigned int = SERSPEED);
+        ArduinoOS_wifi();
         static void begin();
         static void loop();
 
         //Settings
-        static bool   enableTelnet;
+        static bool   telnet_enable;
         static bool   sta_enable;
         static String sta_network;
         static String sta_password;

@@ -12,31 +12,29 @@ String ArduinoOS_wifi::sta_gateway;
 String ArduinoOS_wifi::sta_dns;
 bool   ArduinoOS_wifi::ap_enable{false};
 String ArduinoOS_wifi::ap_password;
-bool   ArduinoOS_wifi::enableTelnet{true};
-bool   ArduinoOS_wifi::telnetBlock{false};
+bool   ArduinoOS_wifi::telnet_enable{true};
 WiFiServer ArduinoOS_wifi::TelnetServer(23);
 WiFiClient ArduinoOS_wifi::TelnetClient[MAX_TELNET_CLIENTS];
-ArduinoOS_wifi::ArduinoOS_wifi(HardwareSerial& Serial, unsigned int baud):
-    ArduinoOS(Serial,baud){
-    addVariable("telnet/enabled",    enableTelnet);
-    addVariable("wifi/enable",      sta_enable);
+ArduinoOS_wifi::ArduinoOS_wifi():ArduinoOS(){
+    addVariable("telnet/enable",     telnet_enable);
+    addVariable("wifi/enable",       sta_enable);
     addVariable("wifi/network",      sta_network);
     addVariable("wifi/password",     sta_password);
     addVariable("wifi/ip",           sta_ip);
     addVariable("wifi/subnet",       sta_subnet);
     addVariable("wifi/gateway",      sta_gateway);
     addVariable("wifi/dns",          sta_dns);
-    addVariable("hotspot/enable",   ap_enable);
+    addVariable("hotspot/enable",    ap_enable);
     addVariable("hotspot/password",  ap_password);
-    addCommand("network",            interface_status,"📶 Shows the current connetion status",false);
-    addCommand("scan",               interface_scan,"📶 Scans for nearby networks",false);
-    addCommand("apply",              interface_apply,"📶 apply network settings and connect to configured network",false);
-    addCommand("dns",                interface_ping,"📶 dns [ip] - check internet connection",false);
+    addCommand("network",            interface_status,  "📶 Shows the current connetion status",false);
+    addCommand("scan",               interface_scan,    "📶 Scans for nearby networks",false);
+    addCommand("connect",            interface_connect, "📶 apply network settings and connect to configured network",false);
+    addCommand("dns",                interface_ping,    "📶 dns [ip] - check internet connection",false);
 };
 void ArduinoOS_wifi::begin(){
     ArduinoOS::begin();
     config(0);
-    if(enableTelnet){
+    if(telnet_enable){
         listenEvent("o",telnetOut);
         TelnetServer.begin();
         TelnetServer.setNoDelay(true);
@@ -44,7 +42,7 @@ void ArduinoOS_wifi::begin(){
 };
 void ArduinoOS_wifi::loop(){
     ArduinoOS::loop();
-    if(enableTelnet) telnetLoop();
+    if(telnet_enable) telnetLoop();
     //Timer 1S
     static unsigned long t{0};
     if((unsigned long)(millis()-t)>=1000&&(t=millis())){
@@ -55,7 +53,7 @@ void ArduinoOS_wifi::loop(){
 };
 
 //Methods
-void ArduinoOS_wifi::config(uint8_t s){
+bool ArduinoOS_wifi::config(uint8_t s){
     //Source
     // 0 - Node
     // 1 - STA
@@ -89,6 +87,7 @@ void ArduinoOS_wifi::config(uint8_t s){
         WiFi.softAP(aos_hostname,ap_password);
     }else WiFi.mode(WIFI_OFF);
 
+    return true;
 };
 bool ArduinoOS_wifi::connected(){
     return (WiFi.status() == WL_CONNECTED && WiFi.localIP().toString() != "(IP unset)" && WiFi.localIP().toString() != "0.0.0.0");
@@ -122,16 +121,12 @@ void ArduinoOS_wifi::telnetLoop(){
   for(uint8_t i{0}; i < MAX_TELNET_CLIENTS; i++)
     if (TelnetClient[i] && TelnetClient[i].connected())
         while(TelnetClient[i].available()){
-            while(TelnetClient[i].available()){
-                //telnetBlock=true;
+            while(TelnetClient[i].available())
                 charIn(TelnetClient[i].read(),false);
-                //telnetBlock=false;
-            }
             delay(5);
         };
 };
 void ArduinoOS_wifi::telnetOut(void* value){
-    if(telnetBlock) return;
     for(uint8_t i{0}; i < MAX_TELNET_CLIENTS; i++)
         if (TelnetClient[i] || TelnetClient[i].connected())
             TelnetClient[i].print((char*)value);
@@ -214,7 +209,7 @@ void ArduinoOS_wifi::interface_scan(char**,uint8_t){
         }
     }else o("❌ No Networks found!");
 };
-void ArduinoOS_wifi::interface_apply(char** c,uint8_t n){
+void ArduinoOS_wifi::interface_connect(char** c,uint8_t n){
     if(n==3){
             snprintf(charIOBuffer,LONG,"Set  wifi/enabled: %s","true");o(charIOBuffer);
             snprintf(charIOBuffer,LONG,"Set  wifi/network: %s",c[1]);o(charIOBuffer);
