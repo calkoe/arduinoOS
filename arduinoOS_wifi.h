@@ -13,20 +13,14 @@ class ArduinoOS_wifi : public ArduinoOS{
 
         //Methods
         static bool config(uint8_t);
-        static bool connected();
         static int  calcRSSI(int);
 
         //Telnet
         static void telnetLoop();
         static void telnetOut(void*);
-        static WiFiServer TelnetServer;
-        static WiFiClient TelnetClient[];
+        static WiFiServer* TelnetServer;
+        static WiFiClient* TelnetClient;
 
-        //Interface
-        static void interface_status(char**,uint8_t);
-        static void interface_scan(char**,uint8_t);
-        static void interface_connect(char**,uint8_t);
-        static void interface_ping(char**,uint8_t);
 
     public:
 
@@ -34,6 +28,7 @@ class ArduinoOS_wifi : public ArduinoOS{
         ArduinoOS_wifi();
         static void begin();
         static void loop();
+        static bool connected();
 
         //Settings
         static bool   telnet_enable;
@@ -47,6 +42,12 @@ class ArduinoOS_wifi : public ArduinoOS{
         static bool   ap_enable;
         static String ap_network;
         static String ap_password;
+
+        //Interface
+        static void interface_status(char**,uint8_t);
+        static void interface_scan(char**,uint8_t);
+        static void interface_connect(char**,uint8_t);
+        static void interface_ping(char**,uint8_t);
 
 };
 

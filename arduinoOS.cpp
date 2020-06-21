@@ -125,12 +125,18 @@ bool ArduinoOS::addCommand(char* name,void (*function)(char** param, uint8_t par
     }else{
         AOS_CMD* i{aos_cmd};
         while(i->aos_cmd != nullptr){
-            if(!strcmp(i->name,name)) return false;
+            if(!strcmp(i->name,name)){
+                i->function     = function;
+                i->description  = description;
+                i->hidden       = hidden;
+                delete b;
+                return true;
+            };    
             i = i->aos_cmd;
         };
         i->aos_cmd = b;
     }
-    return true;
+    return false;
 };
 void ArduinoOS::listCommands(char* filter){
     p(textCommands);
@@ -181,12 +187,20 @@ bool ArduinoOS::_addVariable(char* name,void* value,char* description,bool hidde
     }else{
         AOS_VAR* i{aos_var};
         while(i->aos_var != nullptr){
-            if(!strcmp(i->name,name)) return false;
+            if(!strcmp(i->name,name)){
+                i->value        = value;
+                i->description  = description;
+                i->hidden       = hidden;
+                i->protect      = protect;
+                i->aos_dt       = aos_dt;
+                delete b;
+                return true;
+            }
             i = i->aos_var;
         };
         i->aos_var = b;
     } 
-    return true;
+    return false;
 };
 void ArduinoOS::listVariables(char* filter){
     p(textVariables);

@@ -17,11 +17,6 @@ class ArduinoOS_mqtt : public ArduinoOS_wifi{
 
 
 
-        //Interface
-        static void interface_mqtt(char**,uint8_t);
-
-
-
     public:
 
         //Global
@@ -41,6 +36,11 @@ class ArduinoOS_mqtt : public ArduinoOS_wifi{
         static String       user;
         static String       password;
     
+        //Interface
+        static void interface_status(char**,uint8_t);
+        static void interface_connect(char**,uint8_t);
+        static void interface_publish(char**,uint8_t);
+
 };
 
 #endif

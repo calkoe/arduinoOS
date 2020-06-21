@@ -72,19 +72,6 @@ class ArduinoOS{
         static AOS_CMD*         aos_cmd;
         static AOS_VAR*         aos_var;
         static AOS_EVT*         aos_evt;
-        
-        //Interface
-        static int  freeMemory();
-        static void aos_gpio(char**,uint8_t);
-        static void aos_help(char**,uint8_t);
-        static void aos_load(char**,uint8_t);
-        static void aos_save(char**,uint8_t);
-        static void aos_get(char**,uint8_t);
-        static void aos_set(char**,uint8_t);
-        static void aos_stats(char**,uint8_t);
-        static void aos_clear(char**,uint8_t);
-        static void aos_reboot(char**,uint8_t);
-        static void aos_reset(char**,uint8_t);
 
         //IO
         static unsigned charIOBufferPos;
@@ -150,5 +137,18 @@ class ArduinoOS{
         static void    terminalHandleHistory(bool);
         static void    terminalParseCommand();
         static void    terminalNl();
+
+        //Interface
+        static int  freeMemory();
+        static void aos_gpio(char**,uint8_t);
+        static void aos_help(char**,uint8_t);
+        static void aos_load(char**,uint8_t);
+        static void aos_save(char**,uint8_t);
+        static void aos_get(char**,uint8_t);
+        static void aos_set(char**,uint8_t);
+        static void aos_stats(char**,uint8_t);
+        static void aos_clear(char**,uint8_t);
+        static void aos_reboot(char**,uint8_t);
+        static void aos_reset(char**,uint8_t);
 
 };
