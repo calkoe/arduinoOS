@@ -16,20 +16,20 @@ bool   ArduinoOS_wifi::telnet_enable{true};
 WiFiServer* ArduinoOS_wifi::TelnetServer;
 WiFiClient* ArduinoOS_wifi::TelnetClient;
 ArduinoOS_wifi::ArduinoOS_wifi():ArduinoOS(){
-    addVariable("telnet/enable",     telnet_enable);
-    addVariable("wifi/enable",       sta_enable);
-    addVariable("wifi/network",      sta_network);
-    addVariable("wifi/password",     sta_password);
-    addVariable("wifi/ip",           sta_ip);
-    addVariable("wifi/subnet",       sta_subnet);
-    addVariable("wifi/gateway",      sta_gateway);
-    addVariable("wifi/dns",          sta_dns);
-    addVariable("hotspot/enable",    ap_enable);
-    addVariable("hotspot/password",  ap_password);
+    addVariable("telnet/enable",     telnet_enable, "📶 Enable Telnet support on Port 23");
+    addVariable("wifi/enable",       sta_enable,    "📶 Enable WiFi STA-Mode");
+    addVariable("wifi/network",      sta_network,   "📶 Network SSID");
+    addVariable("wifi/password",     sta_password,  "📶 Network Password");
+    addVariable("wifi/ip",           sta_ip,        "📶 IP (leave blank to use DHCP)");
+    addVariable("wifi/subnet",       sta_subnet,    "📶 Subnet");
+    addVariable("wifi/gateway",      sta_gateway,   "📶 Gateway");
+    addVariable("wifi/dns",          sta_dns,       "📶 DNS");
+    addVariable("hotspot/enable",    ap_enable,     "📶 Enable WiFi Hotspot");
+    addVariable("hotspot/password",  ap_password,   "📶 Hotspot Password");
     addCommand("status",             interface_status,  "🖥 Shows System / Wifi status",false);
     addCommand("wifi-scan",          interface_scan,    "📶 Scans for nearby networks",false);
     addCommand("wifi-connect",       interface_connect, "📶 apply network settings and connect to configured network",false);
-    addCommand("wifi-dns",           interface_ping,    "📶 dns [ip] - check internet connection",false);
+    addCommand("wifi-dns",           interface_ping,    "📶 wifi-dns [ip] | check internet connection",false);
 };
 void ArduinoOS_wifi::begin(){
     ArduinoOS::begin();
@@ -145,37 +145,23 @@ void ArduinoOS_wifi::interface_status(char** c,uint8_t n){
     o("");o("📶 Newtwork:");
     char* s;
     switch(WiFi.status()){
-        case WL_CONNECTED:
-            s = "WL_CONNECTED";break;
-        case WL_NO_SHIELD:
-            s = "WL_NO_SHIELD";break;
-        case WL_IDLE_STATUS:
-            s = "WL_IDLE_STATUS";break;
-        case WL_CONNECT_FAILED:
-            s = "WL_CONNECT_FAILED";break;
-        case WL_NO_SSID_AVAIL:
-            s = "WL_NO_SSID_AVAIL";break;
-        case WL_SCAN_COMPLETED:
-            s = "WL_SCAN_COMPLETED";break;
-        case WL_CONNECTION_LOST:
-            s = "WL_CONNECTION_LOST";break;
-        case WL_DISCONNECTED:
-            s = "WL_DISCONNECTED";break;
-        default:
-            s = "UNKOWN";
+        case WL_CONNECTED:      s = "WL_CONNECTED";break;
+        case WL_NO_SHIELD:      s = "WL_NO_SHIELD";break;
+        case WL_IDLE_STATUS:    s = "WL_IDLE_STATUS";break;
+        case WL_CONNECT_FAILED: s = "WL_CONNECT_FAILED";break;
+        case WL_NO_SSID_AVAIL:  s = "WL_NO_SSID_AVAIL";break;
+        case WL_SCAN_COMPLETED: s = "WL_SCAN_COMPLETED";break;
+        case WL_CONNECTION_LOST:s = "WL_CONNECTION_LOST";break;
+        case WL_DISCONNECTED:   s = "WL_DISCONNECTED";break;
+        default: s = "UNKOWN";
     };
     char* m;
     switch(WiFi.getMode()){
-        case WIFI_AP:
-            m = "WIFI_AP";break;
-        case WIFI_STA:
-            m = "WIFI_STA";break;
-        case WIFI_AP_STA:
-            m = "WIFI_AP_STA";break;
-        case WIFI_OFF:
-            m = "WIFI_OFF";break;
-        default:
-            char* m = "UNKOWN";
+        case WIFI_AP:           m = "WIFI_AP";break;
+        case WIFI_STA:          m = "WIFI_STA";break;
+        case WIFI_AP_STA:       m = "WIFI_AP_STA";break;
+        case WIFI_OFF:          m = "WIFI_OFF";break;
+        default:                m = "UNKOWN";
     };
     IPAddress localIP       = WiFi.localIP();
     IPAddress subnetMask    = WiFi.subnetMask();
@@ -219,15 +205,17 @@ void ArduinoOS_wifi::interface_scan(char**,uint8_t){
     }else o("❌ No Networks found!");
 };
 void ArduinoOS_wifi::interface_connect(char** c,uint8_t n){
-    if(n==3){
-            snprintf(charIOBuffer,LONG,"Set  wifi/enabled: %s","true");o(charIOBuffer);
+    snprintf(charIOBuffer,LONG,"Set  wifi/enabled: %s","true");o(charIOBuffer);
+    sta_enable  = true;
+    if(n>=2){
             snprintf(charIOBuffer,LONG,"Set  wifi/network: %s",c[1]);o(charIOBuffer);
-            snprintf(charIOBuffer,LONG,"Set wifi/password: %s",c[2]);o(charIOBuffer);
-            sta_enable  = true;
-            sta_network  = c[1];
-            sta_password = c[2];
-            loadVariables(true);
+            setVariable("wifi/network",c[1]);
     };
+    if(n>=3){
+            snprintf(charIOBuffer,LONG,"Set wifi/password: %s",c[2]);o(charIOBuffer);
+            setVariable("wifi/network",c[2]);
+    };
+    loadVariables(true);
     o("✅ Type 'status' to check status");
     config(1);
 };

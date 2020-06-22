@@ -15,16 +15,16 @@ String              ArduinoOS_mqtt::user{};
 String              ArduinoOS_mqtt::password{};
 //Global
 ArduinoOS_mqtt::ArduinoOS_mqtt():ArduinoOS_wifi(){
-    addVariable("mqtt/enable",    enable);
-    addVariable("mqtt/server",    server);
-    addVariable("mqtt/port",      port);
-    addVariable("mqtt/tls",       tls);
-    addVariable("mqtt/tlsVerify", tlsVerify);
-    addVariable("mqtt/clientID",  clientID);
-    addVariable("mqtt/user",      user);
-    addVariable("mqtt/password",  password);
-    addCommand("status",          interface_status,  "🖥 Shows System / Wifi / MQTT status",false);
-    addCommand("mqtt-connect",    interface_connect, "📡 apply mqtt settings and connect to configured server",false);
+    addVariable("mqtt/enable",    enable    ,"📡 Enable MQTT");
+    addVariable("mqtt/server",    server    ,"📡 MQTT Server IP or Name");
+    addVariable("mqtt/port",      port      ,"📡 MQTT Server Port");
+    addVariable("mqtt/tls",       tls       ,"📡 Use TLS");
+    addVariable("mqtt/tlsVerify", tlsVerify ,"📡 Verify TLS Certificates");
+    addVariable("mqtt/clientID",  clientID  ,"📡 Client ID");
+    addVariable("mqtt/user",      user      ,"📡 Username");
+    addVariable("mqtt/password",  password  ,"📡 Password");
+    addCommand("status",          interface_status,  "🖥  Shows System / Wifi / MQTT status",false);
+    addCommand("mqtt-connect",    interface_connect, "📡 Apply mqtt settings and connect to configured server",false);
     addCommand("mqtt-publish",    interface_publish, "📡 [topic] [message] | publish a message to topic",false);
    
 };
@@ -35,6 +35,7 @@ void ArduinoOS_mqtt::begin(){
 };
 void ArduinoOS_mqtt::loop(){
     ArduinoOS_wifi::loop();
+    if(enable)  mqtt.loop();
     //Timer 1S
     static unsigned long t{0};
     if((unsigned long)(millis()-t)>=1000&&(t=millis())){
@@ -52,7 +53,7 @@ bool ArduinoOS_mqtt::config(uint8_t s){
     if(net)         delete net;
     if(netSecure)   delete netSecure;
     if(enable){
-        mqtt.setKeepAlive(60);
+        mqtt.setOptions(60, true, 1000);
         if(tls){
             netSecure = new WiFiClientSecure;
             if(!tlsVerify) netSecure->setInsecure();
@@ -60,7 +61,9 @@ bool ArduinoOS_mqtt::config(uint8_t s){
         }else{
             net = new WiFiClientSecure;
             mqtt.begin(server.c_str(),port,*net);
-        }
+        };
+    }else{
+        mqtt.disconnect();
     }
     return true;
 }
@@ -111,11 +114,33 @@ void ArduinoOS_mqtt::interface_status(char** c,uint8_t n){
 };
 
 void ArduinoOS_mqtt::interface_connect(char** c,uint8_t n){
+    snprintf(charIOBuffer,LONG,"Set  mqtt/enabled: %s","true");o(charIOBuffer);
+    enable  = true;
+    if(n>=2){
+            snprintf(charIOBuffer,LONG,"Set  mqtt/server: %s",c[1]);o(charIOBuffer);
+            setVariable("mqtt/server",c[1]);
+    };
+    if(n>=3){
+            snprintf(charIOBuffer,LONG,"Set mqtt/port: %s",c[2]);o(charIOBuffer);
+            setVariable("mqtt/port",c[2]);
+    };
+    if(n>=4){
+            snprintf(charIOBuffer,LONG,"Set mqtt/user: %s",c[2]);o(charIOBuffer);
+            setVariable("mqtt/user",c[3]);
+    };
+    if(n>=5){
+            snprintf(charIOBuffer,LONG,"Set mqtt/password: %s",c[2]);o(charIOBuffer);
+            setVariable("mqtt/password",c[4]);
+    };
+    loadVariables(true);
     o("✅ Type 'status' to check status");
+    config(1);
 };
 
 void ArduinoOS_mqtt::interface_publish(char** c,uint8_t n){
-    
-    mqtt.publish(c[1],c[2]);
+    if(n>=3){
+        mqtt.publish(c[1],c[2]);
+        o("📨 sent!");
+    };
 };
 #endif

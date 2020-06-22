@@ -75,7 +75,7 @@ void ArduinoOS::aos_set(char** param,uint8_t parCnt){
     } 
 };
 void ArduinoOS::aos_stats(char** param,uint8_t parCnt){
-    o("🖥 System:");
+    o("🖥  System:");
     snprintf(charIOBuffer,LONG,"%-20s : %s","COMPILED",aos_date.c_str());o(charIOBuffer);
     snprintf(charIOBuffer,LONG,"%-20s : %d B","HEAP",freeMemory());o(charIOBuffer);
     snprintf(charIOBuffer,LONG,"%-20s : %d B","EERPOM",usedEeprom);o(charIOBuffer);

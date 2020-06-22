@@ -143,7 +143,7 @@ void ArduinoOS::listCommands(char* filter){
     AOS_CMD* i{aos_cmd};
     while(i != nullptr){
         if(!i->hidden && (filter=="" || strstr(i->name, filter))){
-            snprintf(charIOBuffer,LONG, "%-20s : %s",i->name,i->description);o(charIOBuffer);
+            snprintf(charIOBuffer,LONG, "%-20s %s",i->name,i->description);o(charIOBuffer);
         }
         i = i->aos_cmd;
     };
@@ -234,8 +234,7 @@ bool ArduinoOS::setVariable(char* name,char* value){
 void* ArduinoOS::getValue(char* name){
     AOS_VAR* i{aos_var};
     while(i != nullptr){
-        if(!strcmp(i->name,name))
-            return (bool*)(i->value);
+        if(!strcmp(i->name,name)) return i->value;
         i = i->aos_var;
     };
     return nullptr;
