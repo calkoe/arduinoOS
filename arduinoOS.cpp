@@ -18,17 +18,17 @@ unsigned int        ArduinoOS::serialBaud{SERSPEED};
 bool                ArduinoOS::autoLoad{true};
 bool                ArduinoOS::autoReset{true};
 bool                ArduinoOS::locked{false};
-String              ArduinoOS::aos_date{__DATE__ " " __TIME__};
-String              ArduinoOS::aos_date_temp{aos_date};
-String              ArduinoOS::aos_hostname{"arduinoOS"};
-String              ArduinoOS::aos_user{"root"};
-String              ArduinoOS::aos_password{"root"};
-uint8_t             ArduinoOS::aos_statusLed{STATUSLED};
+uint8_t             ArduinoOS::statusLed{STATUSLED};
+String              ArduinoOS::date{__DATE__ " " __TIME__};
+String              ArduinoOS::date_temp{date};
+String              ArduinoOS::hostname{"arduinoOS"};
+String              ArduinoOS::user{"root"};
+String              ArduinoOS::password{"root"};
 ArduinoOS::ArduinoOS(){
-    addVariable("sys/date", aos_date,"",true,true);
-    addVariable("sys/hostname", aos_hostname,"");
-    addVariable("sys/user", aos_user,"");
-    addVariable("sys/password", aos_password,"");
+    addVariable("sys/date", date,"",true,true);
+    addVariable("sys/hostname", hostname,"");
+    addVariable("sys/user", user,"");
+    addVariable("sys/password", password,"");
     addCommand("gpio",aos_gpio,"🖥  gpio [w|r] [pin] [0|1]");
     addCommand("help",aos_help,"",true);
     addCommand("load",aos_load,"",true);
@@ -47,7 +47,7 @@ void ArduinoOS::begin(){
     #if defined ESP8266 || defined ESP32 
         EEPROM.begin(EEPROM_SIZE);
     #endif
-    if(aos_statusLed) pinMode(aos_statusLed,OUTPUT);
+    if(statusLed) pinMode(statusLed,OUTPUT);
     if(autoLoad)  loadVariables();
     o(0x07,false);
     p(textEscClear);
@@ -67,14 +67,14 @@ void ArduinoOS::loop(){
     //Events
     loopEvent();
     //Status LED
-    if(aos_statusLed){
+    if(statusLed){
         static unsigned long t{0};
-        if(!status)          digitalWrite(aos_statusLed,1);
-        else if(status==5)   digitalWrite(aos_statusLed,0);
+        if(!status)          digitalWrite(statusLed,1);
+        else if(status==5)   digitalWrite(statusLed,0);
         else if((unsigned long)(millis()-t)>=200&&(t=millis())){
             static bool o{1};
             static uint8_t p{0};
-            if(p<2*status) digitalWrite(aos_statusLed,o=!o);
+            if(p<2*status) digitalWrite(statusLed,o=!o);
             if(p==10){p=0;o=1;}else p++;
         }
     };
@@ -93,7 +93,7 @@ void ArduinoOS::listenEvent(char* name,void (*function)(void*)){
 void ArduinoOS::emitEvent(char* name,void* value,bool now){
     AOS_EVT* i{aos_evt};
     while(i != nullptr){
-        if(i->name == name){
+        if(!strcmp(i->name,name)){
             if(now){
                 (*(i->function))(value);
                 i->active  = false;
@@ -102,7 +102,6 @@ void ArduinoOS::emitEvent(char* name,void* value,bool now){
                 i->active  = true;
             }
         }
-        
         i = i->aos_evt;
     };
 };
@@ -273,8 +272,8 @@ void ArduinoOS::loadVariables(bool save){
                     }
                 }
             }
-            if(aos_date != aos_date_temp && !save && autoReset){
-                o("RESET");aos_date=aos_date_temp;
+            if(date != date_temp && !save && autoReset){
+                o("RESET");date=date_temp;
                 loadVariables(true);return;
             }
         i = i->aos_var;
@@ -327,7 +326,7 @@ void ArduinoOS::charIn(char c,bool echo){
                 strcpy(terminalHistory,charIOBuffer);
                 terminalParseCommand(); 
             } 
-            if(!strcmp(charIOBuffer,aos_password.c_str())) locked = false;
+            if(!strcmp(charIOBuffer,password.c_str())) locked = false;
             charIOBufferPos=0;
             terminalNl();
         }
@@ -376,18 +375,18 @@ void ArduinoOS::terminalNl(){
         delay(1000);
         p(textEnterPassword,false);
     }else{
-        snprintf(charIOBuffer,LONG,"%s:/>",aos_user.c_str());o(charIOBuffer,false);
+        snprintf(charIOBuffer,LONG,"%s:/>",user.c_str());o(charIOBuffer,false);
     };
     clearBuffer(charIOBuffer,LONG);
 }
 void ArduinoOS::terminalHandleHistory(bool u){
     o("\33[2K",false);o(0x0D,false);
     if(u){
-        snprintf(charIOBuffer,LONG,"%s:/>%s",aos_user.c_str(),terminalHistory);o(charIOBuffer,false);
+        snprintf(charIOBuffer,LONG,"%s:/>%s",user.c_str(),terminalHistory);o(charIOBuffer,false);
         strcpy(charIOBuffer,terminalHistory);
         charIOBufferPos=strlen(terminalHistory);
     }else{
-        snprintf(charIOBuffer,LONG,"%s:/>",aos_user.c_str());o(charIOBuffer,false);
+        snprintf(charIOBuffer,LONG,"%s:/>",user.c_str());o(charIOBuffer,false);
         charIOBufferPos=0;
         clearBuffer(charIOBuffer,LONG);
     }

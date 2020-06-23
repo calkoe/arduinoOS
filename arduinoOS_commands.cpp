@@ -76,7 +76,7 @@ void ArduinoOS::aos_set(char** param,uint8_t parCnt){
 };
 void ArduinoOS::aos_stats(char** param,uint8_t parCnt){
     o("🖥  System:");
-    snprintf(charIOBuffer,LONG,"%-20s : %s","COMPILED",aos_date.c_str());o(charIOBuffer);
+    snprintf(charIOBuffer,LONG,"%-20s : %s","COMPILED",date.c_str());o(charIOBuffer);
     snprintf(charIOBuffer,LONG,"%-20s : %d B","HEAP",freeMemory());o(charIOBuffer);
     snprintf(charIOBuffer,LONG,"%-20s : %d B","EERPOM",usedEeprom);o(charIOBuffer);
 };
@@ -90,7 +90,7 @@ void ArduinoOS::aos_reboot(char** param,uint8_t parCnt){
     for(int i{0};;i++){o('.',false);delay(333);}
 };
 void ArduinoOS::aos_reset(char** param,uint8_t parCnt){
-    aos_date = "";
+    date = "";
     loadVariables(true);
     aos_reboot(0,0);
 }

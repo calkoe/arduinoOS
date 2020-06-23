@@ -1,9 +1,8 @@
+#pragma once
 #if defined ESP8266
 
 #include "arduinoOS.h"
 #include <ESP8266WiFi.h> 
-
-#pragma once
 
 #define MAX_TELNET_CLIENTS 2
 
@@ -30,7 +29,7 @@ class ArduinoOS_wifi : public ArduinoOS{
         static void loop();
         static bool connected();
 
-        //Settings
+        //API Settings
         static bool   telnet_enable;
         static bool   sta_enable;
         static String sta_network;

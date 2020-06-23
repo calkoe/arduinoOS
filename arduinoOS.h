@@ -69,6 +69,7 @@ class ArduinoOS{
             AOS_EVT*    aos_evt;
         };
         static bool             isBegin;
+        static unsigned         usedEeprom;
         static AOS_CMD*         aos_cmd;
         static AOS_VAR*         aos_var;
         static AOS_EVT*         aos_evt;
@@ -77,66 +78,14 @@ class ArduinoOS{
         static unsigned charIOBufferPos;
         static char    terminalHistory[LONG];
         static bool    _addVariable(char*,void*,char*,bool,bool,AOS_DT);
-        
-        
-    public:   
-
-        //Global
-        ArduinoOS();
-        static void             begin();
-        static void             loop();
-        static char             charIOBuffer[LONG];
-        static unsigned         usedEeprom;
-
-        //Settings
-        static bool             enableSerial;
-        static HardwareSerial   serialInstance;
-        static bool             serialEcho;
-        static unsigned int     serialBaud;
-        static uint8_t          status;
-        static bool             enableWatchdog;
-        static bool             autoLoad;
-        static bool             autoReset;
-        static bool             locked;
-        static String           aos_date;
-        static String           aos_date_temp;
-        static String           aos_hostname;
-        static String           aos_user;
-        static String           aos_password;
-        static uint8_t          aos_statusLed;
-
-        //Events
-        static void    listenEvent(char*,void(*)(void*));
-        static void    emitEvent(char*,void*,bool = false);
-        static void    loopEvent();
-
-        //Commands
-        static bool    addCommand(char*,void (*)(char**, uint8_t),char* = "",bool = false);
-        static void    listCommands(char* = "");
-        static void    manCommand(char*);
-        static bool    callCommand(char*,char** = 0, uint8_t = 0);
-
-        //Variables
-        static bool    addVariable(char*,bool&,  char* = "",bool = false,bool = false);
-        static bool    addVariable(char*,int&,   char* = "",bool = false,bool = false);
-        static bool    addVariable(char*,double&,char* = "",bool = false,bool = false);
-        static bool    addVariable(char*,String&,char* = "",bool = false,bool = false);
-        static void    listVariables(char* = "");
-        static bool    setVariable(char*,char*);
-        static void*   getValue(char*);
-        static void    loadVariables(bool = false);
-
-        //IO
-        static void    o(const char,bool=true);
-        static void    o(const char*,bool=true);
-        static void    o(String,bool=true);
-        static void    p(const char*,bool=true);
-        static void    charIn(char,bool=true);
-        static bool    charEsc(char);
         static void    clearBuffer(char*,unsigned int);
         static void    terminalHandleHistory(bool);
         static void    terminalParseCommand();
-        static void    terminalNl();
+        
+    protected:
+
+        //Global
+        static char             charIOBuffer[LONG];
 
         //Interface
         static int  freeMemory();
@@ -150,5 +99,63 @@ class ArduinoOS{
         static void aos_clear(char**,uint8_t);
         static void aos_reboot(char**,uint8_t);
         static void aos_reset(char**,uint8_t);
+
+        //IO
+        static void    charIn(char,bool=true);
+        static bool    charEsc(char);
+        static void    terminalNl();
+
+    public:   
+
+        //Global
+        ArduinoOS();
+        static void             begin();
+        static void             loop();
+
+        //API Settings
+        static bool             enableSerial;
+        static HardwareSerial   serialInstance;
+        static bool             serialEcho;
+        static unsigned int     serialBaud;
+        static uint8_t          status;
+        static bool             enableWatchdog;
+        static bool             autoLoad;
+        static bool             autoReset;
+        static bool             locked;
+        static uint8_t          statusLed;
+        static String           date;
+        static String           date_temp;
+        static String           hostname;
+        static String           user;
+        static String           password;
+
+        //API Events
+        static void             listenEvent(char*,void(*)(void*));
+        static void             emitEvent(char*,void*,bool = false);
+        static void             loopEvent();
+
+        //API Commands
+        static bool             addCommand(char*,void (*)(char**, uint8_t),char* = "",bool = false);
+        static void             listCommands(char* = "");
+        static void             manCommand(char*);
+        static bool             callCommand(char*,char** = 0, uint8_t = 0);
+
+        //API Variables
+        static bool             addVariable(char*,bool&,  char* = "",bool = false,bool = false);
+        static bool             addVariable(char*,int&,   char* = "",bool = false,bool = false);
+        static bool             addVariable(char*,double&,char* = "",bool = false,bool = false);
+        static bool             addVariable(char*,String&,char* = "",bool = false,bool = false);
+        static void             listVariables(char* = "");
+        static bool             setVariable(char*,char*);
+        static void*            getValue(char*);
+        static void             loadVariables(bool = false);
+
+        //API IO
+        static void    o(const char,bool=true);
+        static void    o(const char*,bool=true);
+        static void    o(String,bool=true);
+        static void    p(const char*,bool=true);
+
+        
 
 };

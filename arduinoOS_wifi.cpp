@@ -60,7 +60,7 @@ bool ArduinoOS_wifi::config(uint8_t s){
         WiFi.setAutoConnect(true);
         WiFi.persistent(false); 
         WiFi.mode(WIFI_STA);
-        WiFi.hostname(aos_hostname); 
+        WiFi.hostname(hostname); 
         WiFi.mode(WIFI_OFF);
         //wifi_set_sleep_type(NONE_SLEEP_T); //https://blog.creations.de/?p=149
 
@@ -91,7 +91,7 @@ bool ArduinoOS_wifi::config(uint8_t s){
         WiFi.begin(sta_network,sta_password);
     }else if(ap_enable && !WiFi.softAPgetStationNum()){
         WiFi.softAPConfig(IPAddress(192, 168, 100, 1), IPAddress(192, 168, 100, 1), IPAddress(255, 255, 255, 0));
-        WiFi.softAP(aos_hostname,ap_password);
+        WiFi.softAP(hostname,ap_password);
     }else WiFi.mode(WIFI_OFF);
 
     return true;
@@ -170,7 +170,7 @@ void ArduinoOS_wifi::interface_status(char** c,uint8_t n){
     snprintf(charIOBuffer,LONG,"%-20s : %s","Mode",m);o(charIOBuffer);
     snprintf(charIOBuffer,LONG,"%-20s : %s","Status",s);o(charIOBuffer);
     snprintf(charIOBuffer,LONG,"%-20s : %s","Connected",connected()?"true":"false");o(charIOBuffer);
-    snprintf(charIOBuffer,LONG,"%-20s : %s","Hostname",aos_hostname.c_str());o(charIOBuffer);
+    snprintf(charIOBuffer,LONG,"%-20s : %s","Hostname",hostname.c_str());o(charIOBuffer);
     snprintf(charIOBuffer,LONG,"%-20s : %s","LocalMAC",WiFi.macAddress().c_str());o(charIOBuffer);
     snprintf(charIOBuffer,LONG,"%-20s : %d.%d.%d.%d","LocalIP",localIP[0],localIP[1],localIP[2],localIP[3]);o(charIOBuffer);
     snprintf(charIOBuffer,LONG,"%-20s : %d.%d.%d.%d","SubnetMask",subnetMask[0],subnetMask[1],subnetMask[2],subnetMask[3]);o(charIOBuffer);
@@ -187,27 +187,21 @@ void ArduinoOS_wifi::interface_scan(char**,uint8_t){
         for (uint8_t i = 0; i < n; i++){
             char* e;
             switch(WiFi.encryptionType(i)){
-                case AUTH_OPEN:
-                    e = "AUTH_OPEN";break;
-                case AUTH_WEP:
-                    e = "AUTH_WEP";break;
-                case AUTH_WPA_PSK:
-                    e = "AUTH_WPA_PSK";break;
-                case AUTH_WPA2_PSK:
-                    e = "AUTH_WPA2_PSK";break;
-                case AUTH_WPA_WPA2_PSK:
-                    e = "AUTH_WPA_WPA2_PSK";break;
-                default:
-                    char* m = "UNKOWN";
+                case AUTH_OPEN:         e = "AUTH_OPEN";break;
+                case AUTH_WEP:          e = "AUTH_WEP";break;
+                case AUTH_WPA_PSK:      e = "AUTH_WPA_PSK";break;
+                case AUTH_WPA2_PSK:     e = "AUTH_WPA2_PSK";break;
+                case AUTH_WPA_WPA2_PSK: e = "AUTH_WPA_WPA2_PSK";break;
+                default:                e = "UNKOWN";
             }
             snprintf(charIOBuffer,LONG,"%-20s : %d dBm (%d%%) (%s)",WiFi.SSID(i).c_str(),WiFi.RSSI(i), calcRSSI(WiFi.RSSI()),e);o(charIOBuffer);
         }
     }else o("❌ No Networks found!");
 };
 void ArduinoOS_wifi::interface_connect(char** c,uint8_t n){
-    snprintf(charIOBuffer,LONG,"Set  wifi/enabled: %s","true");o(charIOBuffer);
-    sta_enable  = true;
     if(n>=2){
+            snprintf(charIOBuffer,LONG,"Set  wifi/enabled: %s","true");o(charIOBuffer);
+            sta_enable  = true;
             snprintf(charIOBuffer,LONG,"Set  wifi/network: %s",c[1]);o(charIOBuffer);
             setVariable("wifi/network",c[1]);
     };
