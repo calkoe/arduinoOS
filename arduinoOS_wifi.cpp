@@ -3,20 +3,25 @@
 #include "arduinoOS_wifi.h"
 
 //Global
-bool   ArduinoOS_wifi::sta_enable{false};
-String ArduinoOS_wifi::sta_network;
-String ArduinoOS_wifi::sta_password;
-String ArduinoOS_wifi::sta_ip;
-String ArduinoOS_wifi::sta_subnet;
-String ArduinoOS_wifi::sta_gateway;
-String ArduinoOS_wifi::sta_dns;
-bool   ArduinoOS_wifi::ap_enable{false};
-String ArduinoOS_wifi::ap_password;
-bool   ArduinoOS_wifi::telnet_enable{true};
+bool        ArduinoOS_wifi::telnet_enable{true};
+String      ArduinoOS_wifi::ntp_server{true};
+int         ArduinoOS_wifi::ntp_offset{true};
+bool        ArduinoOS_wifi::sta_enable{false};
+String      ArduinoOS_wifi::sta_network{""};
+String      ArduinoOS_wifi::sta_password{""};
+String      ArduinoOS_wifi::sta_ip{"0.0.0.0"};
+String      ArduinoOS_wifi::sta_subnet{"0.0.0.0"};
+String      ArduinoOS_wifi::sta_gateway{"0.0.0.0"};
+String      ArduinoOS_wifi::sta_dns{"0.0.0.0"};
+bool        ArduinoOS_wifi::ap_enable{false};
+String      ArduinoOS_wifi::ap_password{""};
+WiFiUDP     ArduinoOS_wifi::wifiUDP;
+NTPClient   ArduinoOS_wifi::timeClient{ArduinoOS_wifi::wifiUDP};
 WiFiServer* ArduinoOS_wifi::TelnetServer;
+DNSServer   ArduinoOS_wifi::dnsServer;
 WiFiClient* ArduinoOS_wifi::TelnetClient;
 ArduinoOS_wifi::ArduinoOS_wifi():ArduinoOS(){
-    addVariable("telnet/enable",     telnet_enable, "📶 Enable Telnet support on Port 23");
+
     addVariable("wifi/enable",       sta_enable,    "📶 Enable WiFi STA-Mode");
     addVariable("wifi/network",      sta_network,   "📶 Network SSID");
     addVariable("wifi/password",     sta_password,  "📶 Network Password");
@@ -26,6 +31,9 @@ ArduinoOS_wifi::ArduinoOS_wifi():ArduinoOS(){
     addVariable("wifi/dns",          sta_dns,       "📶 DNS");
     addVariable("hotspot/enable",    ap_enable,     "📶 Enable WiFi Hotspot");
     addVariable("hotspot/password",  ap_password,   "📶 Hotspot Password");
+    addVariable("telnet/enable",     telnet_enable, "📶 Enable Telnet support on Port 23 (require reboot)");
+    addVariable("ntp/server",        ntp_server,    "⏱  NTP Server adress");
+    addVariable("ntp/offset",        ntp_offset,    "⏱  NTP Time offset");
     addCommand("status",             interface_status,  "🖥 Shows System / Wifi status",false);
     addCommand("wifi-scan",          interface_scan,    "📶 Scans for nearby networks",false);
     addCommand("wifi-connect",       interface_connect, "📶 apply network settings and connect to configured network",false);
@@ -38,22 +46,25 @@ void ArduinoOS_wifi::begin(){
 void ArduinoOS_wifi::loop(){
     ArduinoOS::loop();
     if(telnet_enable) telnetLoop();
+    dnsServer.processNextRequest();
     //Timer 1S
-    static unsigned long t{0};
-    if((unsigned long)(millis()-t)>=1000&&(t=millis())){
+    static unsigned long t1{0};
+    if((unsigned long)(millis()-t1)>=1000&&(t1=millis())){
         if(connected()){
             if(ArduinoOS::status == 1) ArduinoOS::status = 5;
         }else ArduinoOS::status = 1;
+    };
+    //Timer 10S
+    static unsigned long t2{0};
+    if((unsigned long)(millis()-t2)>=10000&&(t2=millis())){
+        if(connected()){
+            if(ntp_server) timeClient.update();
+        }
     };
 };
 
 //Methods
 bool ArduinoOS_wifi::config(uint8_t s){
-    //Source
-    // 0 - Node
-    // 1 - STA
-    // 2 - AP
-    
     if(s == 0){
         //WiFi
         ESP.eraseConfig();
@@ -74,7 +85,20 @@ bool ArduinoOS_wifi::config(uint8_t s){
             TelnetServer->begin();
             TelnetServer->setNoDelay(true);
         }
+
+        //DNS
+        dnsServer.setErrorReplyCode(DNSReplyCode::NoError);
+        dnsServer.start(53, "*", IPAddress(192, 168, 100, 1));
+        
     };
+
+    //NTP
+    if(ntp_server){
+        timeClient.setPoolServerName(ntp_server.c_str());
+        timeClient.setTimeOffset(60 * 60 * ntp_offset);
+        timeClient.setUpdateInterval(1000 * 60 * 60);
+        timeClient.begin();
+    }
 
     if(sta_enable){
         if(sta_ip && sta_subnet && sta_gateway && sta_dns){
@@ -89,10 +113,12 @@ bool ArduinoOS_wifi::config(uint8_t s){
             WiFi.config(wifiIp,wifiDns,wifiSubnet,wifiGateway);
         }
         WiFi.begin(sta_network,sta_password);
-    }else if(ap_enable && !WiFi.softAPgetStationNum()){
+    };
+    if(ap_enable && !WiFi.softAPgetStationNum()){
         WiFi.softAPConfig(IPAddress(192, 168, 100, 1), IPAddress(192, 168, 100, 1), IPAddress(255, 255, 255, 0));
         WiFi.softAP(hostname,ap_password);
-    }else WiFi.mode(WIFI_OFF);
+    };
+    if(!sta_enable && !ap_enable) WiFi.mode(WIFI_OFF);
 
     return true;
 };
@@ -179,6 +205,7 @@ void ArduinoOS_wifi::interface_status(char** c,uint8_t n){
     snprintf(charIOBuffer,LONG,"%-20s : %s","AP MAC",WiFi.softAPmacAddress().c_str());o(charIOBuffer);
     snprintf(charIOBuffer,LONG,"%-20s : %d.%d.%d.%d","AP IP",apIP[0],apIP[1],apIP[2],apIP[3]);o(charIOBuffer);
     snprintf(charIOBuffer,LONG,"%-20s : %d","AP Stations",WiFi.softAPgetStationNum());o(charIOBuffer);
+    snprintf(charIOBuffer,LONG,"%-20s : %s","NTP Time",timeClient.getFormattedTime().c_str());o(charIOBuffer);
 };
 void ArduinoOS_wifi::interface_scan(char**,uint8_t){
     o("Scaning for Networks...");

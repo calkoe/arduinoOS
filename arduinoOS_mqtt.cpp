@@ -13,8 +13,8 @@ int                     ArduinoOS_mqtt::port{1883};
 bool                    ArduinoOS_mqtt::tls{false};
 bool                    ArduinoOS_mqtt::tlsVerify{false};
 String                  ArduinoOS_mqtt::clientID{ArduinoOS::hostname};
-String                  ArduinoOS_mqtt::user{};
-String                  ArduinoOS_mqtt::password{};
+String                  ArduinoOS_mqtt::user{""};
+String                  ArduinoOS_mqtt::password{""};
 //Global
 ArduinoOS_mqtt::ArduinoOS_mqtt():ArduinoOS_wifi(){
     addVariable("mqtt/enable",    enable    ,"📡 Enable MQTT");

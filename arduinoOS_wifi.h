@@ -3,6 +3,9 @@
 
 #include "arduinoOS.h"
 #include <ESP8266WiFi.h> 
+#include <WiFiUdp.h>
+#include <NTPClient.h>
+#include <DNSServer.h>
 
 #define MAX_TELNET_CLIENTS 2
 
@@ -13,6 +16,13 @@ class ArduinoOS_wifi : public ArduinoOS{
         //Methods
         static bool config(uint8_t);
         static int  calcRSSI(int);
+
+        //NTP
+        static WiFiUDP   wifiUDP;
+        static NTPClient timeClient;
+
+        //DNS
+        static DNSServer dnsServer;
 
         //Telnet
         static void telnetLoop();
@@ -31,6 +41,8 @@ class ArduinoOS_wifi : public ArduinoOS{
 
         //API Settings
         static bool   telnet_enable;
+        static String ntp_server;
+        static int    ntp_offset;
         static bool   sta_enable;
         static String sta_network;
         static String sta_password;
