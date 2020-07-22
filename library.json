@@ -1,0 +1,16 @@
+{
+    "name": "ArduinoOS",
+    "keywords": "arduino cpp management utility",
+    "description": "A powerful library for saving and modify your application settings",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/calkoe/arduinoOS.git"
+    },
+    "version": "1.0.0",
+    "frameworks": "arduino",
+    "platforms": "*",
+    "dependencies": {
+        "arduino-mqtt": "https://github.com/256dpi/arduino-mqtt.git",
+        "NTPClient": "https://github.com/arduino-libraries/NTPClient.git"
+    }
+}
