@@ -8,11 +8,10 @@ WiFiClient*             ArduinoOS_mqtt::net;
 WiFiClientSecure*       ArduinoOS_mqtt::netSecure;
 MQTTClient*             ArduinoOS_mqtt::mqtt;
 bool                    ArduinoOS_mqtt::enable{true};
-String                  ArduinoOS_mqtt::server{"192.168.1.7"};
+String                  ArduinoOS_mqtt::server{""};
 int                     ArduinoOS_mqtt::port{1883};
 bool                    ArduinoOS_mqtt::tls{false};
 bool                    ArduinoOS_mqtt::tlsVerify{false};
-String                  ArduinoOS_mqtt::clientID{ArduinoOS::hostname};
 String                  ArduinoOS_mqtt::user{""};
 String                  ArduinoOS_mqtt::password{""};
 //Global
@@ -22,11 +21,10 @@ ArduinoOS_mqtt::ArduinoOS_mqtt():ArduinoOS_wifi(){
     addVariable("mqtt/port",      port      ,"📡 MQTT Server Port");
     addVariable("mqtt/tls",       tls       ,"📡 Use TLS");
     addVariable("mqtt/tlsVerify", tlsVerify ,"📡 Verify TLS Certificates");
-    addVariable("mqtt/clientID",  clientID  ,"📡 Client ID");
     addVariable("mqtt/user",      user      ,"📡 Username");
     addVariable("mqtt/password",  password  ,"📡 Password");
     addCommand("status",          interface_status,  "🖥  Shows System / Wifi / MQTT status",false);
-    addCommand("mqtt-connect",    interface_connect, "📡 Apply mqtt settings and connect to configured server",false);
+    addCommand("mqtt-connect",    interface_connect, "📡 [server] [port] [user] [password] | Apply mqtt settings and connect to configured server",false);
     addCommand("mqtt-publish",    interface_publish, "📡 [topic] [message] | publish a message to topic",false);
 };
 
@@ -53,7 +51,7 @@ void ArduinoOS_mqtt::loop(){
         }else if(enable && ArduinoOS_wifi::connected()){ 
             connected = false;
             if(ArduinoOS::status == 5) ArduinoOS::status = 2;
-            mqtt->connect(clientID.c_str(),user.c_str(),password.c_str());
+            mqtt->connect(hostname.c_str(),user.c_str(),password.c_str());
         };
     };
 };
@@ -79,18 +77,18 @@ bool ArduinoOS_mqtt::config(uint8_t s){
     return true;
 };
 void ArduinoOS_mqtt::publish(char* topic, char* payload, bool retained, int qos){
-    mqtt->publish(topic,payload,retained,qos);
+    if(isBegin) mqtt->publish(topic,payload,retained,qos);
 };
 void ArduinoOS_mqtt::publish(String& topic, String& payload, bool retained, int qos){
-    mqtt->publish(topic,payload,retained,qos);
+    if(isBegin) mqtt->publish(topic,payload,retained,qos);
 };
-void ArduinoOS_mqtt::subscripe(char* topic,uint8_t qos,void (*function)(char*)){
-    if(mqtt->connected()) mqtt->subscribe(topic,qos);
+void ArduinoOS_mqtt::subscripe(char* topic,uint8_t qos,void (*function)(char*,char*)){
+    if(isBegin && mqtt->connected()) mqtt->subscribe(topic,qos);
     SUB* b = new SUB{topic,qos,function,sub};
     sub = b;
 };
 void ArduinoOS_mqtt::unsubscripe(char* topic){
-    if(mqtt->connected()) mqtt->unsubscribe(topic);
+    if(isBegin && mqtt->connected()) mqtt->unsubscribe(topic);
     SUB* t = sub;
     SUB* l = sub;
     while(t){
@@ -113,7 +111,7 @@ void ArduinoOS_mqtt::handle(MQTTClient *client, char* topic, char* payload, int 
     SUB* t = sub;
     while(t){
         if(!strcmp(t->topic,topic))
-            (*(t->function))(payload);
+            (*(t->function))(topic,payload);
         t = t->sub;
     };
 };
@@ -181,7 +179,7 @@ void ArduinoOS_mqtt::interface_connect(char** c,uint8_t n){
             setVariable("mqtt/password",c[4]);
     };
     loadVariables(true);
-    o("✅ Type 'status' to check status");
+    o("DONE! ✅ > Type 'status' to check status");
     config(1);
 };
 

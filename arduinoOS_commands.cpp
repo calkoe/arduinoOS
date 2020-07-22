@@ -24,21 +24,19 @@ int ArduinoOS::freeMemory() {
 
 //Interface Methods
 void ArduinoOS::aos_gpio(char** param,uint8_t parCnt){
-    if(parCnt < 3 || parCnt > 4 ){
-        p(textInvalidParameter);
-        manCommand("gpio");
-        return;
-    }
-    if(strstr(param[1],"w")){
-        pinMode(atoi(param[2]),OUTPUT);
-        digitalWrite(atoi(param[2]),atoi(param[3]));
-    }
-    if(strstr(param[1],"r")){
-        pinMode(atoi(param[2]),INPUT);
-        if(digitalRead(atoi(param[2])))
+    if(parCnt == 2){
+      pinMode(atoi(param[1]),INPUT);
+        if(digitalRead(atoi(param[1])))
             o("1"); 
         else
             o("0"); 
+    }else if(parCnt == 3){
+      pinMode(atoi(param[1]),OUTPUT);
+      digitalWrite(atoi(param[1]),atoi(param[2]));
+    }else{
+      p(textInvalidParameter);
+      manCommand("gpio");
+      return;
     }
 }
 void ArduinoOS::aos_help(char** param,uint8_t parCnt){

@@ -68,7 +68,6 @@ class ArduinoOS{
             void*       value;
             AOS_EVT*    aos_evt;
         };
-        static bool             isBegin;
         static unsigned         usedEeprom;
         static AOS_CMD*         aos_cmd;
         static AOS_VAR*         aos_var;
@@ -85,6 +84,7 @@ class ArduinoOS{
     protected:
 
         //Global
+        static bool             isBegin;
         static char             charIOBuffer[LONG];
 
         //Interface

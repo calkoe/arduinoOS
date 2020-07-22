@@ -15,15 +15,21 @@ class ArduinoOS_mqtt : public ArduinoOS_wifi{
         struct SUB {
             char*       topic;
             int         qos;
-            void        (*function)(char*);
+            void        (*function)(char*,char*);
             SUB*        sub;
         };
         static SUB* sub;
 
         //Methods
         static bool config(uint8_t);
-
+        static void handle(MQTTClient*, char*, char*, int);
+        
     protected:
+
+        //Interface
+        static void interface_status(char**,uint8_t);
+        static void interface_connect(char**,uint8_t);
+        static void interface_publish(char**,uint8_t);
 
     public:
 
@@ -36,9 +42,8 @@ class ArduinoOS_mqtt : public ArduinoOS_wifi{
         static MQTTClient*  mqtt;
         static void publish(char*, char*, bool = false, int = 0);
         static void publish(String&, String&, bool = false, int = 0);
-        static void subscripe(char*,uint8_t,void (*function)(char*));
+        static void subscripe(char*,uint8_t,void (*function)(char*,char*));
         static void unsubscripe(char*);
-        static void handle(MQTTClient*, char*, char*, int);
 
         //API Settings
         static bool         enable;
@@ -49,11 +54,6 @@ class ArduinoOS_mqtt : public ArduinoOS_wifi{
         static String       clientID;
         static String       user;
         static String       password;
-    
-        //Interface
-        static void interface_status(char**,uint8_t);
-        static void interface_connect(char**,uint8_t);
-        static void interface_publish(char**,uint8_t);
 
 };
 

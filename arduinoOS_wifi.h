@@ -29,7 +29,14 @@ class ArduinoOS_wifi : public ArduinoOS{
         static void telnetOut(void*);
         static WiFiServer* TelnetServer;
         static WiFiClient* TelnetClient;
+        
+    protected:
 
+        //Interface
+        static void interface_status(char**,uint8_t);
+        static void interface_scan(char**,uint8_t);
+        static void interface_connect(char**,uint8_t);
+        static void interface_ping(char**,uint8_t);
 
     public:
 
@@ -53,12 +60,6 @@ class ArduinoOS_wifi : public ArduinoOS{
         static bool   ap_enable;
         static String ap_network;
         static String ap_password;
-
-        //Interface
-        static void interface_status(char**,uint8_t);
-        static void interface_scan(char**,uint8_t);
-        static void interface_connect(char**,uint8_t);
-        static void interface_ping(char**,uint8_t);
 
 };
 

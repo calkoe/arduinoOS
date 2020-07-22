@@ -4,8 +4,8 @@
 
 //Global
 bool        ArduinoOS_wifi::telnet_enable{true};
-String      ArduinoOS_wifi::ntp_server{true};
-int         ArduinoOS_wifi::ntp_offset{true};
+String      ArduinoOS_wifi::ntp_server{""};
+int         ArduinoOS_wifi::ntp_offset{0};
 bool        ArduinoOS_wifi::sta_enable{false};
 String      ArduinoOS_wifi::sta_network{""};
 String      ArduinoOS_wifi::sta_password{""};
@@ -29,15 +29,15 @@ ArduinoOS_wifi::ArduinoOS_wifi():ArduinoOS(){
     addVariable("wifi/subnet",       sta_subnet,    "📶 Subnet");
     addVariable("wifi/gateway",      sta_gateway,   "📶 Gateway");
     addVariable("wifi/dns",          sta_dns,       "📶 DNS");
-    addVariable("hotspot/enable",    ap_enable,     "📶 Enable WiFi Hotspot");
+    addVariable("hotspot/enable",    ap_enable,     "📶 Enable WiFi Hotspot-Mode");
     addVariable("hotspot/password",  ap_password,   "📶 Hotspot Password");
     addVariable("telnet/enable",     telnet_enable, "📶 Enable Telnet support on Port 23 (require reboot)");
     addVariable("ntp/server",        ntp_server,    "⏱  NTP Server adress");
     addVariable("ntp/offset",        ntp_offset,    "⏱  NTP Time offset");
     addCommand("status",             interface_status,  "🖥 Shows System / Wifi status",false);
     addCommand("wifi-scan",          interface_scan,    "📶 Scans for nearby networks",false);
-    addCommand("wifi-connect",       interface_connect, "📶 apply network settings and connect to configured network",false);
-    addCommand("wifi-dns",           interface_ping,    "📶 wifi-dns [ip] | check internet connection",false);
+    addCommand("wifi-connect",       interface_connect, "📶 [network] [password] | apply network settings and connect to configured network",false);
+    addCommand("wifi-dns",           interface_ping,    "📶 [ip] | check internet connection",false);
 };
 void ArduinoOS_wifi::begin(){
     ArduinoOS::begin();
@@ -234,10 +234,10 @@ void ArduinoOS_wifi::interface_connect(char** c,uint8_t n){
     };
     if(n>=3){
             snprintf(charIOBuffer,LONG,"Set wifi/password: %s",c[2]);o(charIOBuffer);
-            setVariable("wifi/network",c[2]);
+            setVariable("wifi/password",c[2]);
     };
     loadVariables(true);
-    o("✅ Type 'status' to check status");
+    o("DONE! ✅ > Type 'status' to check status");
     config(1);
 };
 void ArduinoOS_wifi::interface_ping(char** c,uint8_t n){

@@ -29,7 +29,7 @@ ArduinoOS::ArduinoOS(){
     addVariable("sys/hostname", hostname,"");
     addVariable("sys/user", user,"");
     addVariable("sys/password", password,"");
-    addCommand("gpio",aos_gpio,"🖥  gpio [w|r] [pin] [0|1]");
+    addCommand("gpio",aos_gpio,"🖥  gpio [pin] [0|1]");
     addCommand("help",aos_help,"",true);
     addCommand("load",aos_load,"",true);
     addCommand("save",aos_save,"",true);
