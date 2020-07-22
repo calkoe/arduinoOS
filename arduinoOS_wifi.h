@@ -1,5 +1,5 @@
-#pragma once
-#if defined ESP8266
+#ifndef ARDUINOOS_WIFI_H && defined ESP8266
+#define ARDUINOOS_WIFI_H
 
 #include "arduinoOS.h"
 #include <ESP8266WiFi.h> 

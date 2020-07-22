@@ -1,3 +1,6 @@
+#ifndef ARDUINOOS_H
+#define ARDUINOOS_H
+
 //
 //  arduinoOS.h
 //  V1.1
@@ -7,7 +10,6 @@
 //  https://github.com/calkoe/arduinoOS
 //
 
-#pragma once
 #include <arduino.h>
 #include <EEPROM.h>
 
@@ -159,3 +161,4 @@ class ArduinoOS{
         
 
 };
+#endif

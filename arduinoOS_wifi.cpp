@@ -1,6 +1,5 @@
-#if defined ESP8266
-
 #include "arduinoOS_wifi.h"
+#ifdef ARDUINOOS_WIFI_H
 
 //Global
 bool        ArduinoOS_wifi::telnet_enable{true};

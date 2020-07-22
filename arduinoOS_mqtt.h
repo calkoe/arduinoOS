@@ -1,5 +1,5 @@
-#pragma once
-#if defined ESP8266
+#ifndef ARDUINOOS_MQTT_H && defined ESP8266
+#define ARDUINOOS_MQTT_H
 
 #include "arduinoOS_wifi.h"
 #include "MQTTClient.h"

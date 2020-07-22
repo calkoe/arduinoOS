@@ -1,4 +1,5 @@
 #include <arduinoOS.h>
+#ifdef ARDUINOOS_H
 
 //Global
 bool                ArduinoOS::isBegin = false;
@@ -416,3 +417,4 @@ void ArduinoOS::terminalParseCommand(){
     if(parCnt>0) if(!callCommand(param[0],param,parCnt)) p(textCommandNotFound);
     for(uint8_t i{0};i<parCnt;i++) delete param[i];
 };
+#endif

@@ -1,6 +1,5 @@
-#if defined ESP8266
-
 #include "arduinoOS_mqtt.h"
+#ifdef ARDUINOOS_MQTT_H
 
 bool                    ArduinoOS_mqtt::connected{false};
 ArduinoOS_mqtt::SUB*    ArduinoOS_mqtt::sub{nullptr};
