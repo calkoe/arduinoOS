@@ -1,8 +1,8 @@
-#ifndef ARDUINOOS_MQTT_H && defined ESP8266
+#if not defined ARDUINOOS_MQTT_H and defined ESP8266
 #define ARDUINOOS_MQTT_H
 
 #include "arduinoOS_wifi.h"
-#include "MQTTClient.h"
+#include <MQTT.h>
 
 class ArduinoOS_mqtt : public ArduinoOS_wifi{
 

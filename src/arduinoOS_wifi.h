@@ -1,4 +1,4 @@
-#ifndef ARDUINOOS_WIFI_H && defined ESP8266
+#if not defined ARDUINOOS_WIFI_H and defined ESP8266
 #define ARDUINOOS_WIFI_H
 
 #include "arduinoOS.h"

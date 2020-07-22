@@ -10,7 +10,7 @@
     "frameworks": "arduino",
     "platforms": "*",
     "dependencies": {
-        "arduino-mqtt": "https://github.com/256dpi/arduino-mqtt.git",
+        "MQTT": "https://github.com/256dpi/arduino-mqtt.git",
         "NTPClient": "https://github.com/arduino-libraries/NTPClient.git"
     }
 }
