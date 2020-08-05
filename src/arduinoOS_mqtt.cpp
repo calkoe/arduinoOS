@@ -1,5 +1,5 @@
-#include "arduinoOS_mqtt.h"
-#ifdef ARDUINOOS_MQTT_H
+#include <arduinoOS_mqtt.h>
+#ifdef ESP8266
 
 bool                    ArduinoOS_mqtt::connected{false};
 ArduinoOS_mqtt::SUB*    ArduinoOS_mqtt::sub{nullptr};
@@ -15,16 +15,16 @@ String                  ArduinoOS_mqtt::user{""};
 String                  ArduinoOS_mqtt::password{""};
 //Global
 ArduinoOS_mqtt::ArduinoOS_mqtt():ArduinoOS_wifi(){
-    addVariable("mqtt/enable",    enable    ,"📡 Enable MQTT");
-    addVariable("mqtt/server",    server    ,"📡 MQTT Server IP or Name");
-    addVariable("mqtt/port",      port      ,"📡 MQTT Server Port");
-    addVariable("mqtt/tls",       tls       ,"📡 Use TLS");
-    addVariable("mqtt/tlsVerify", tlsVerify ,"📡 Verify TLS Certificates");
-    addVariable("mqtt/user",      user      ,"📡 Username");
-    addVariable("mqtt/password",  password  ,"📡 Password");
-    addCommand("status",          interface_status,  "🖥  Shows System / Wifi / MQTT status",false);
-    addCommand("mqtt-connect",    interface_connect, "📡 [server] [port] [user] [password] | Apply mqtt settings and connect to configured server",false);
-    addCommand("mqtt-publish",    interface_publish, "📡 [topic] [message] | publish a message to topic",false);
+    addVariable("mqtt/enable",    enable    ,           "📡 Enable MQTT");
+    addVariable("mqtt/server",    server    ,           "📡 MQTT Server IP or Name");
+    addVariable("mqtt/port",      port      ,           "📡 MQTT Server Port");
+    addVariable("mqtt/tls",       tls       ,           "📡 Use TLS");
+    addVariable("mqtt/tlsVerify", tlsVerify ,           "📡 Verify TLS Certificates");
+    addVariable("mqtt/user",      user      ,           "📡 Username");
+    addVariable("mqtt/password",  password  ,           "📡 Password");
+    addCommand("status",          interface_status,     "🖥  Shows System / Wifi / MQTT status",false);
+    addCommand("mqtt-connect",    interface_connect,    "📡 [server] [port] [user] [password] | Apply mqtt settings and connect to configured server",false);
+    addCommand("mqtt-publish",    interface_publish,    "📡 [topic] [message] | publish a message to topic",false);
 };
 
 void ArduinoOS_mqtt::begin(){

@@ -1,5 +1,4 @@
-#ifndef ARDUINOOS_H
-#define ARDUINOOS_H
+#pragma once
 
 //
 //  arduinoOS.h
@@ -158,7 +157,4 @@ class ArduinoOS{
         static void    o(String,bool=true);
         static void    p(const char*,bool=true);
 
-        
-
 };
-#endif

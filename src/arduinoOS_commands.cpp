@@ -1,5 +1,4 @@
 #include <arduinoOS.h>
-#ifdef ARDUINOOS_H
 
 #if not defined ESP8266
 #ifdef __arm__
@@ -93,4 +92,3 @@ void ArduinoOS::aos_reset(char** param,uint8_t parCnt){
     loadVariables(true);
     aos_reboot(0,0);
 }
-#endif

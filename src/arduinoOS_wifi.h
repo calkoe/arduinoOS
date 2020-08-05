@@ -1,7 +1,7 @@
-#if not defined ARDUINOOS_WIFI_H and defined ESP8266
-#define ARDUINOOS_WIFI_H
+#pragma once
+#ifdef ESP8266
 
-#include "arduinoOS.h"
+#include <arduinoOS.h>
 #include <ESP8266WiFi.h> 
 #include <WiFiUdp.h>
 #include <NTPClient.h>
@@ -22,7 +22,7 @@ class ArduinoOS_wifi : public ArduinoOS{
         static NTPClient timeClient;
 
         //DNS
-        static DNSServer dnsServer;
+        //static DNSServer dnsServer;
 
         //Telnet
         static void telnetLoop();
