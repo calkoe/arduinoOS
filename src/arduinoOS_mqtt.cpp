@@ -38,7 +38,7 @@ void ArduinoOS_mqtt::loop(){
     static unsigned long t{0};
     if((unsigned long)(millis()-t)>=1000&&(t=millis())){
         if(mqtt->connected()){
-            ArduinoOS::status = 5;
+            if(ArduinoOS::status == 2) ArduinoOS::status = 5;
             if(!connected){
                 connected = true;
                 SUB* t = sub;

@@ -9,7 +9,7 @@ ArduinoOS::AOS_EVT* ArduinoOS::aos_evt{nullptr};
 unsigned            ArduinoOS::charIOBufferPos{0};
 char                ArduinoOS::terminalHistory[LONG];
 char                ArduinoOS::charIOBuffer[LONG];
-uint8_t             ArduinoOS::status{1};
+uint8_t             ArduinoOS::status{5};
 unsigned            ArduinoOS::usedEeprom{0};
 bool                ArduinoOS::serialEcho{true};
 bool                ArduinoOS::enableWatchdog{true};
@@ -59,7 +59,7 @@ void ArduinoOS::loop(){
     //Read Serial
     while(serialInstance.available()){
         while(serialInstance.available())
-            charIn(serialInstance.read());
+            charIn(serialInstance.read(),true);
         delay(5);
     }
     //Watchdog
@@ -304,21 +304,19 @@ void ArduinoOS::p(const char* ca,bool nl){
     }o("",nl);
 };
 void ArduinoOS::charIn(char c,bool echo){
-        if(c == 10) return;                                         //Filter NL
         if(charEsc(c)) return;                                      //Filter ESC 
-        if(echo) o(c,false); 
+        if(c != 13 && c != 10 && echo) o(c,false);                  //Filter CR + NL
         if(c == 127 || c == 8){                                     //DEL BACKSPACE
             if(charIOBufferPos > 0){
-                o(8,false);                                         //BACKSPACE
                 o(32,false);                                        //SPACE
                 o(8,false);                                         //BACKSPACE
                 charIOBuffer[--charIOBufferPos] = 0;
             }else{
                 o(7,false);                                         //BELL
             }
-        }else if(c == 0x09){}                                       //TAB
-        else if(c != 13 && charIOBufferPos < LONG-1){               //CR
-            charIOBuffer[charIOBufferPos++] = c;
+        }else if(c == 9){}                                          //TAB
+        else if(c != 10 && charIOBufferPos < LONG-1){               //NL
+            if(c != 13) charIOBuffer[charIOBufferPos++] = c;        //CR
         }else{
             o(13,false);o(10,false);                                //CR + NL
             if(!strcmp(charIOBuffer,"logout")) locked = true;
@@ -327,8 +325,8 @@ void ArduinoOS::charIn(char c,bool echo){
                 terminalParseCommand(); 
             } 
             if(!strcmp(charIOBuffer,password.c_str())) locked = false;
-            charIOBufferPos=0;
             terminalNl();
+            charIOBufferPos=0;
         }
 };
 bool ArduinoOS::charEsc(char c){
@@ -372,7 +370,6 @@ void ArduinoOS::clearBuffer(char* ca,unsigned int l){
 };
 void ArduinoOS::terminalNl(){
     if(locked){
-        delay(1000);
         p(textEnterPassword,false);
     }else{
         snprintf(charIOBuffer,LONG,"%s:/>",user.c_str());o(charIOBuffer,false);

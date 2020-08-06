@@ -15,7 +15,7 @@
 #if defined ESP8266
     #define SHORT               128     //Programm Parameter, Parameter Count
     #define LONG                128     //BufferIn, BufferOut, TerminalHistory
-    #define SERSPEED            112500 
+    #define SERSPEED            115200 
     #define STATUSLED           16
     #define EEPROM_SIZE         1024    //Only for ESP
 #else
@@ -89,7 +89,6 @@ class ArduinoOS{
         static char             charIOBuffer[LONG];
 
         //Interface
-        static int  freeMemory();
         static void aos_gpio(char**,uint8_t);
         static void aos_help(char**,uint8_t);
         static void aos_load(char**,uint8_t);
@@ -102,7 +101,7 @@ class ArduinoOS{
         static void aos_reset(char**,uint8_t);
 
         //IO
-        static void    charIn(char,bool=true);
+        static void    charIn(char,bool);
         static bool    charEsc(char);
         static void    terminalNl();
 
@@ -112,6 +111,7 @@ class ArduinoOS{
         ArduinoOS();
         static void             begin();
         static void             loop();
+        static int              freeMemory();
 
         //API Settings
         static bool             enableSerial;

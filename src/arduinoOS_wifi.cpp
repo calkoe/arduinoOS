@@ -50,7 +50,10 @@ void ArduinoOS_wifi::loop(){
     if((unsigned long)(millis()-t1)>=1000&&(t1=millis())){
         if(connected()){
             if(ArduinoOS::status == 1) ArduinoOS::status = 5;
-        }else ArduinoOS::status = 1;
+        }
+        else{
+            if(ArduinoOS::status == 5 && sta_enable) ArduinoOS::status = 1;
+        } 
     };
     //Timer 10S
     static unsigned long t2{0};
@@ -219,7 +222,7 @@ void ArduinoOS_wifi::interface_scan(char**,uint8_t){
                 case AUTH_WPA_WPA2_PSK: e = "AUTH_WPA_WPA2_PSK";break;
                 default:                e = "UNKOWN";
             }
-            snprintf(charIOBuffer,LONG,"%-20s : %d dBm (%d%%) (%s)",WiFi.SSID(i).c_str(),WiFi.RSSI(i), calcRSSI(WiFi.RSSI()),e);o(charIOBuffer);
+            snprintf(charIOBuffer,LONG,"%-20s : %d dBm (%d%%) (%s)",WiFi.SSID(i).c_str(),WiFi.RSSI(i), calcRSSI(WiFi.RSSI(i)),e);o(charIOBuffer);
         }
     }else o("❌ No Networks found!");
 };
