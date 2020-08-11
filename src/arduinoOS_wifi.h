@@ -3,6 +3,7 @@
 
 #include <arduinoOS.h>
 #include <ESP8266WiFi.h> 
+#include <ESP8266httpUpdate.h>
 #include <WiFiUdp.h>
 #include <NTPClient.h>
 #include <DNSServer.h>
@@ -37,6 +38,8 @@ class ArduinoOS_wifi : public ArduinoOS{
         static void interface_scan(char**,uint8_t);
         static void interface_connect(char**,uint8_t);
         static void interface_ping(char**,uint8_t);
+        static void interface_firmware(char**,uint8_t);
+
 
     public:
 

@@ -29,10 +29,10 @@
 
 //Text
 const char textErrorBegin[] PROGMEM         = "call addVariable() before begin() !";
-const char textWelcome[] PROGMEM            = "ArduinOS V1.1 - https://github.com/calkoe/arduinoOS\r\n";
+const char textWelcome[] PROGMEM            = "ArduinOS - https://github.com/calkoe/arduinoOS\r\n";
 const char textCommandNotFound[] PROGMEM    = "Command not found! Try 'help' for more information.";
 const char textInvalidParameter[] PROGMEM   = "Invalid parameter!";
-const char textEnterPassword[] PROGMEM      = "Please enter password: ";
+const char textEnterPassword[] PROGMEM      = "Enter password to login: ";
 const char textCommands[] PROGMEM           = "Commands:";
 const char textVariables[] PROGMEM          = "Variables:";
 const char textNotFound[] PROGMEM           = "Parameter not found!";
@@ -75,18 +75,19 @@ class ArduinoOS{
         static AOS_EVT*         aos_evt;
 
         //IO
-        static unsigned charIOBufferPos;
-        static char    terminalHistory[LONG];
         static bool    _addVariable(char*,void*,char*,bool,bool,AOS_DT);
         static void    clearBuffer(char*,unsigned int);
-        static void    terminalHandleHistory(bool);
+        static void    terminalLine();
         static void    terminalParseCommand();
         
     protected:
 
         //Global
         static bool             isBegin;
-        static char             charIOBuffer[LONG];
+        static uint8_t          IOC;
+        static unsigned         IOP[2];
+        static char             IO[2][LONG];
+        static char             OUT[LONG];
 
         //Interface
         static void aos_gpio(char**,uint8_t);
@@ -97,13 +98,14 @@ class ArduinoOS{
         static void aos_set(char**,uint8_t);
         static void aos_stats(char**,uint8_t);
         static void aos_clear(char**,uint8_t);
+        static void aos_lock(char**,uint8_t);
         static void aos_reboot(char**,uint8_t);
         static void aos_reset(char**,uint8_t);
 
         //IO
         static void    charIn(char,bool);
         static bool    charEsc(char);
-        static void    terminalNl();
+        static void    terminalNl(bool);
 
     public:   
 
@@ -127,8 +129,8 @@ class ArduinoOS{
         static String           date;
         static String           date_temp;
         static String           hostname;
-        static String           user;
         static String           password;
+        static String           firmware;
 
         //API Events
         static void             listenEvent(char*,void(*)(void*));

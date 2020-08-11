@@ -32,10 +32,11 @@ ArduinoOS_wifi::ArduinoOS_wifi():ArduinoOS(){
     addVariable("telnet/enable",     telnet_enable,     "📶 Enable Telnet support on Port 23 (require reboot)");
     addVariable("ntp/server",        ntp_server,        "⏱  NTP Server adress");
     addVariable("ntp/offset",        ntp_offset,        "⏱  NTP Time offset");
-    addCommand("status",             interface_status,  "🖥 Shows System / Wifi status",false);
-    addCommand("wifi-scan",          interface_scan,    "📶 Scans for nearby networks",false);
+    addCommand("status",             interface_status,  "🖥  Shows System / Wifi status");
+    addCommand("firmware",           interface_firmware,"🖥  [url] | load and install new firmware from http server");
+    addCommand("wifi-scan",          interface_scan,    "📶 Scans for nearby networks");
     addCommand("wifi-connect",       interface_connect, "📶 [network] [password] | apply network settings and connect to configured network",false);
-    addCommand("wifi-dns",           interface_ping,    "📶 [ip] | check internet connection",false);
+    addCommand("wifi-dns",           interface_ping,    "📶 [ip] | check internet connection");
 };
 void ArduinoOS_wifi::begin(){
     ArduinoOS::begin();
@@ -146,7 +147,7 @@ void ArduinoOS_wifi::telnetLoop(){
         p(textEscClear);
         p(textWelcome);
         listCommands();
-        terminalNl();
+        terminalNl(true);
         break;
       };
     };
@@ -194,19 +195,19 @@ void ArduinoOS_wifi::interface_status(char** c,uint8_t n){
     IPAddress subnetMask    = WiFi.subnetMask();
     IPAddress gatewayIP     = WiFi.gatewayIP();
     IPAddress apIP          = WiFi.softAPIP();
-    snprintf(charIOBuffer,LONG,"%-20s : %s","Mode",m);o(charIOBuffer);
-    snprintf(charIOBuffer,LONG,"%-20s : %s","Status",s);o(charIOBuffer);
-    snprintf(charIOBuffer,LONG,"%-20s : %s","Connected",connected()?"true":"false");o(charIOBuffer);
-    snprintf(charIOBuffer,LONG,"%-20s : %s","Hostname",hostname.c_str());o(charIOBuffer);
-    snprintf(charIOBuffer,LONG,"%-20s : %s","LocalMAC",WiFi.macAddress().c_str());o(charIOBuffer);
-    snprintf(charIOBuffer,LONG,"%-20s : %d.%d.%d.%d","LocalIP",localIP[0],localIP[1],localIP[2],localIP[3]);o(charIOBuffer);
-    snprintf(charIOBuffer,LONG,"%-20s : %d.%d.%d.%d","SubnetMask",subnetMask[0],subnetMask[1],subnetMask[2],subnetMask[3]);o(charIOBuffer);
-    snprintf(charIOBuffer,LONG,"%-20s : %d.%d.%d.%d","GatewayIP",gatewayIP[0],gatewayIP[1],gatewayIP[2],gatewayIP[3]);o(charIOBuffer);
-    snprintf(charIOBuffer,LONG,"%-20s : %d dBm (%d%%)","RSSI",WiFi.RSSI(),calcRSSI(WiFi.RSSI()));o(charIOBuffer);
-    snprintf(charIOBuffer,LONG,"%-20s : %s","AP MAC",WiFi.softAPmacAddress().c_str());o(charIOBuffer);
-    snprintf(charIOBuffer,LONG,"%-20s : %d.%d.%d.%d","AP IP",apIP[0],apIP[1],apIP[2],apIP[3]);o(charIOBuffer);
-    snprintf(charIOBuffer,LONG,"%-20s : %d","AP Stations",WiFi.softAPgetStationNum());o(charIOBuffer);
-    snprintf(charIOBuffer,LONG,"%-20s : %s","NTP Time",timeClient.getFormattedTime().c_str());o(charIOBuffer);
+    snprintf(OUT,LONG,"%-20s : %s","Mode",m);o(OUT);
+    snprintf(OUT,LONG,"%-20s : %s","Status",s);o(OUT);
+    snprintf(OUT,LONG,"%-20s : %s","Connected",connected()?"true":"false");o(OUT);
+    snprintf(OUT,LONG,"%-20s : %s","Hostname",hostname.c_str());o(OUT);
+    snprintf(OUT,LONG,"%-20s : %s","LocalMAC",WiFi.macAddress().c_str());o(OUT);
+    snprintf(OUT,LONG,"%-20s : %d.%d.%d.%d","LocalIP",localIP[0],localIP[1],localIP[2],localIP[3]);o(OUT);
+    snprintf(OUT,LONG,"%-20s : %d.%d.%d.%d","SubnetMask",subnetMask[0],subnetMask[1],subnetMask[2],subnetMask[3]);o(OUT);
+    snprintf(OUT,LONG,"%-20s : %d.%d.%d.%d","GatewayIP",gatewayIP[0],gatewayIP[1],gatewayIP[2],gatewayIP[3]);o(OUT);
+    snprintf(OUT,LONG,"%-20s : %d dBm (%d%%)","RSSI",WiFi.RSSI(),calcRSSI(WiFi.RSSI()));o(OUT);
+    snprintf(OUT,LONG,"%-20s : %s","AP MAC",WiFi.softAPmacAddress().c_str());o(OUT);
+    snprintf(OUT,LONG,"%-20s : %d.%d.%d.%d","AP IP",apIP[0],apIP[1],apIP[2],apIP[3]);o(OUT);
+    snprintf(OUT,LONG,"%-20s : %d","AP Stations",WiFi.softAPgetStationNum());o(OUT);
+    snprintf(OUT,LONG,"%-20s : %s","NTP Time",timeClient.getFormattedTime().c_str());o(OUT);
 };
 void ArduinoOS_wifi::interface_scan(char**,uint8_t){
     o("Scaning for Networks...");
@@ -222,19 +223,19 @@ void ArduinoOS_wifi::interface_scan(char**,uint8_t){
                 case AUTH_WPA_WPA2_PSK: e = "AUTH_WPA_WPA2_PSK";break;
                 default:                e = "UNKOWN";
             }
-            snprintf(charIOBuffer,LONG,"%-20s : %d dBm (%d%%) (%s)",WiFi.SSID(i).c_str(),WiFi.RSSI(i), calcRSSI(WiFi.RSSI(i)),e);o(charIOBuffer);
+            snprintf(OUT,LONG,"%-20s : %d dBm (%d%%) (%s)",WiFi.SSID(i).c_str(),WiFi.RSSI(i), calcRSSI(WiFi.RSSI(i)),e);o(OUT);
         }
     }else o("❌ No Networks found!");
 };
 void ArduinoOS_wifi::interface_connect(char** c,uint8_t n){
     if(n>=2){
-            snprintf(charIOBuffer,LONG,"Set  wifi/enabled: %s","true");o(charIOBuffer);
+            snprintf(OUT,LONG,"Set  wifi/enabled: %s","true");o(OUT);
             sta_enable  = true;
-            snprintf(charIOBuffer,LONG,"Set  wifi/network: %s",c[1]);o(charIOBuffer);
+            snprintf(OUT,LONG,"Set  wifi/network: %s",c[1]);o(OUT);
             setVariable("wifi/network",c[1]);
     };
     if(n>=3){
-            snprintf(charIOBuffer,LONG,"Set wifi/password: %s",c[2]);o(charIOBuffer);
+            snprintf(OUT,LONG,"Set wifi/password: %s",c[2]);o(OUT);
             setVariable("wifi/password",c[2]);
     };
     loadVariables(true);
@@ -245,11 +246,43 @@ void ArduinoOS_wifi::interface_ping(char** c,uint8_t n){
     if(n==2){
         IPAddress remote_addr;
         if(WiFi.hostByName(c[1], remote_addr)){
-            snprintf(charIOBuffer,LONG,"✅ DNS %s -> %d.%d.%d.%d",c[1],remote_addr[0],remote_addr[1],remote_addr[2],remote_addr[3]);o(charIOBuffer);
+            snprintf(OUT,LONG,"✅ DNS %s -> %d.%d.%d.%d",c[1],remote_addr[0],remote_addr[1],remote_addr[2],remote_addr[3]);o(OUT);
         }else{
-            snprintf(charIOBuffer,LONG,"❌ DNS lookup failed");o(charIOBuffer);
+            snprintf(OUT,LONG,"❌ DNS lookup failed");o(OUT);
         };
     };
 };
+void ArduinoOS_wifi::interface_firmware(char** c,uint8_t n){
+    if(n==2){
+        String url = c[1];
+        ESPhttpUpdate.setLedPin(STATUSLED,0);
+        ESPhttpUpdate.onProgress([](unsigned int p,unsigned int t){
+            snprintf(OUT,LONG,"[HTTP install] Downloading: %u of %u Bytes",p,t);o(OUT);
+        });
+        t_httpUpdate_return ret;
+        if(url.startsWith("https")){
+            WiFiClientSecure net;
+            net.setInsecure();
+            ret = ESPhttpUpdate.update(net, c[1], firmware);
+        }else{
+            WiFiClient net;
+            ret = ESPhttpUpdate.update(net, c[1], firmware);
+        } 
+        switch(ret) {
+            case HTTP_UPDATE_FAILED:
+                snprintf(OUT,LONG,"[HTTP UPDATE] Error (%d): %s", ESPhttpUpdate.getLastError(), ESPhttpUpdate.getLastErrorString().c_str());o(OUT);
+                break;
+            case HTTP_UPDATE_NO_UPDATES:
+                o("[HTTP UPDATE] No Update Aviable.");
+                break;
+            case HTTP_UPDATE_OK:
+                o("[HTTP UPDATE] Update ok.");
+                break;
+        }
+    }else{
+        manCommand("firmware");
+    }
+};
+
 
 #endif

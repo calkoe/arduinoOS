@@ -148,33 +148,33 @@ void ArduinoOS_mqtt::interface_status(char** c,uint8_t n){
         case LWMQTT_UNKNOWN_RETURN_CODE:        r = "LWMQTT_UNKNOWN_RETURN_CODE"; break;
         default: char* r = "UNKOWN";
     };
-    snprintf(charIOBuffer,LONG,"%-20s : %s","Connected",mqtt->connected()?"true":"false");o(charIOBuffer);
-    snprintf(charIOBuffer,LONG,"%-20s : %s","Last Error",m);o(charIOBuffer);
-    snprintf(charIOBuffer,LONG,"%-20s : %s","Return Code",r);o(charIOBuffer);
+    snprintf(OUT,LONG,"%-20s : %s","Connected",mqtt->connected()?"true":"false");o(OUT);
+    snprintf(OUT,LONG,"%-20s : %s","Last Error",m);o(OUT);
+    snprintf(OUT,LONG,"%-20s : %s","Return Code",r);o(OUT);
     if(netSecure){
         char s[100];
         netSecure->getLastSSLError(s,100);
-        snprintf(charIOBuffer,LONG,"%-20s : %s","Last SSL Error",s);o(charIOBuffer);
+        snprintf(OUT,LONG,"%-20s : %s","Last SSL Error",s);o(OUT);
     }
 };
 
 void ArduinoOS_mqtt::interface_connect(char** c,uint8_t n){
     if(n>=2){
-            snprintf(charIOBuffer,LONG,"Set  mqtt/enabled: %s","true");o(charIOBuffer);
+            snprintf(OUT,LONG,"Set  mqtt/enabled: %s","true");o(OUT);
             enable  = true;
-            snprintf(charIOBuffer,LONG,"Set  mqtt/server: %s",c[1]);o(charIOBuffer);
+            snprintf(OUT,LONG,"Set  mqtt/server: %s",c[1]);o(OUT);
             setVariable("mqtt/server",c[1]);
     };
     if(n>=3){
-            snprintf(charIOBuffer,LONG,"Set mqtt/port: %s",c[2]);o(charIOBuffer);
+            snprintf(OUT,LONG,"Set mqtt/port: %s",c[2]);o(OUT);
             setVariable("mqtt/port",c[2]);
     };
     if(n>=4){
-            snprintf(charIOBuffer,LONG,"Set mqtt/user: %s",c[2]);o(charIOBuffer);
+            snprintf(OUT,LONG,"Set mqtt/user: %s",c[2]);o(OUT);
             setVariable("mqtt/user",c[3]);
     };
     if(n>=5){
-            snprintf(charIOBuffer,LONG,"Set mqtt/password: %s",c[2]);o(charIOBuffer);
+            snprintf(OUT,LONG,"Set mqtt/password: %s",c[2]);o(OUT);
             setVariable("mqtt/password",c[4]);
     };
     loadVariables(true);
