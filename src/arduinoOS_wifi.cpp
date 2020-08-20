@@ -60,11 +60,11 @@ void ArduinoOS_wifi::loop(){
     };
     //Timer 10S
     static unsigned long t2{0};
-    if((unsigned long)(millis()-t2)>=10000&&(t2=millis())){
-        if(ntp_enable && ntp_server && connected()){
-            timeClient.update();
-        }
+    if(ntp_enable && ntp_server && connected() && (unsigned long)(millis()-t2)>=10000&&(t2=millis())){
+        timeClient.update();
     };
+    yield();
+    delay(0);
 };
 
 //Methods
@@ -160,7 +160,7 @@ void ArduinoOS_wifi::telnetLoop(){
         while(TelnetClient[i].available()){
             while(TelnetClient[i].available())
                 charIn(TelnetClient[i].read(),false);
-            delay(5);
+            delay(1);
         };
 };
 void ArduinoOS_wifi::telnetOut(void* value){
