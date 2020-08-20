@@ -3,17 +3,18 @@
 
 //Global
 bool        ArduinoOS_wifi::telnet_enable{true};
-String      ArduinoOS_wifi::ntp_server{""};
+bool        ArduinoOS_wifi::ntp_enable{false};
+String      ArduinoOS_wifi::ntp_server{};
 int         ArduinoOS_wifi::ntp_offset{0};
 bool        ArduinoOS_wifi::sta_enable{false};
-String      ArduinoOS_wifi::sta_network{""};
-String      ArduinoOS_wifi::sta_password{""};
+String      ArduinoOS_wifi::sta_network{};
+String      ArduinoOS_wifi::sta_password{};
 String      ArduinoOS_wifi::sta_ip{"0.0.0.0"};
 String      ArduinoOS_wifi::sta_subnet{"0.0.0.0"};
 String      ArduinoOS_wifi::sta_gateway{"0.0.0.0"};
 String      ArduinoOS_wifi::sta_dns{"0.0.0.0"};
 bool        ArduinoOS_wifi::ap_enable{false};
-String      ArduinoOS_wifi::ap_password{""};
+String      ArduinoOS_wifi::ap_password{};
 WiFiUDP     ArduinoOS_wifi::wifiUDP;
 NTPClient   ArduinoOS_wifi::timeClient{ArduinoOS_wifi::wifiUDP};
 WiFiServer* ArduinoOS_wifi::TelnetServer;
@@ -30,6 +31,7 @@ ArduinoOS_wifi::ArduinoOS_wifi():ArduinoOS(){
     addVariable("hotspot/enable",    ap_enable,         "📶 Enable WiFi Hotspot-Mode");
     addVariable("hotspot/password",  ap_password,       "📶 Hotspot Password");
     addVariable("telnet/enable",     telnet_enable,     "📶 Enable Telnet support on Port 23 (require reboot)");
+    addVariable("ntp/enable",        ntp_enable,        "⏱  Enable NTP Sync");
     addVariable("ntp/server",        ntp_server,        "⏱  NTP Server adress");
     addVariable("ntp/offset",        ntp_offset,        "⏱  NTP Time offset");
     addCommand("status",             interface_status,  "🖥  Shows System / Wifi status");
@@ -59,8 +61,8 @@ void ArduinoOS_wifi::loop(){
     //Timer 10S
     static unsigned long t2{0};
     if((unsigned long)(millis()-t2)>=10000&&(t2=millis())){
-        if(connected()){
-            if(ntp_server) timeClient.update();
+        if(ntp_enable && ntp_server && connected()){
+            timeClient.update();
         }
     };
 };
