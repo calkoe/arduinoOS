@@ -63,7 +63,7 @@ void ArduinoOS::loop(){
     while(serialInstance.available()){
         while(serialInstance.available())
             charIn(serialInstance.read(),true);
-        delay(5);
+        delay(1);
     }
     //Watchdog
     wdt_reset();

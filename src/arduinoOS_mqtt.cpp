@@ -7,12 +7,12 @@ WiFiClient*             ArduinoOS_mqtt::net;
 WiFiClientSecure*       ArduinoOS_mqtt::netSecure;
 MQTTClient*             ArduinoOS_mqtt::mqtt;
 bool                    ArduinoOS_mqtt::enable{true};
-String                  ArduinoOS_mqtt::server{""};
+String                  ArduinoOS_mqtt::server{};
 int                     ArduinoOS_mqtt::port{1883};
 bool                    ArduinoOS_mqtt::tls{false};
 bool                    ArduinoOS_mqtt::tlsVerify{false};
-String                  ArduinoOS_mqtt::user{""};
-String                  ArduinoOS_mqtt::password{""};
+String                  ArduinoOS_mqtt::user{};
+String                  ArduinoOS_mqtt::password{};
 //Global
 ArduinoOS_mqtt::ArduinoOS_mqtt():ArduinoOS_wifi(){
     addVariable("mqtt/enable",    enable    ,           "📡 Enable MQTT");
