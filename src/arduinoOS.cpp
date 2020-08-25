@@ -54,6 +54,7 @@ void ArduinoOS::begin(){
     p(textEscClear);
     p(textWelcome);
     o(firmware);
+    o("");
     listCommands();
     terminalNl(true);
 };

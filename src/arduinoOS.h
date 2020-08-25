@@ -29,7 +29,7 @@
 
 //Text
 const char textErrorBegin[] PROGMEM         = "call addVariable() before begin() !";
-const char textWelcome[] PROGMEM            = "ArduinOS - https://github.com/calkoe/arduinoOS\r\n";
+const char textWelcome[] PROGMEM            = "ArduinOS - https://github.com/calkoe/arduinoOS";
 const char textCommandNotFound[] PROGMEM    = "Command not found! Try 'help' for more information.";
 const char textInvalidParameter[] PROGMEM   = "Invalid parameter!";
 const char textEnterPassword[] PROGMEM      = "Enter password to login: ";

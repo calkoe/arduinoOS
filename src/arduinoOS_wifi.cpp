@@ -33,7 +33,7 @@ ArduinoOS_wifi::ArduinoOS_wifi():ArduinoOS(){
     addVariable("ntp/server",        ntp_server,        "⏱  NTP Server adress");
     addVariable("ntp/offset",        ntp_offset,        "⏱  NTP Time offset");
     addCommand("status",             interface_status,  "🖥  Shows System / Wifi status");
-    addCommand("firmware",           interface_firmware,"🖥  [url] | load and install new firmware from http server");
+    addCommand("firmware",           interface_firmware,"🖥  [url] | load and install new firmware from URL (http or https)");
     addCommand("wifi-scan",          interface_scan,    "📶 Scans for nearby networks");
     addCommand("wifi-connect",       interface_connect, "📶 [network] [password] | apply network settings and connect to configured network",false);
     addCommand("wifi-dns",           interface_ping,    "📶 [ip] | check internet connection");
