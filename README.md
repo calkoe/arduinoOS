@@ -114,10 +114,13 @@ void loop()
 <img src="img/plugins.png" width="25" align="right"/>
 - [x] Allow WIFI-Config on ESP8266
 - [x] Telnet Server on ESP8266
-- [ ] Allow MQTT-Config on ESP8266
-- [ ] Allow NTP-Config on ESP8266
-
+- [x] Allow MQTT-Config on ESP8266 (TLS Supported)
+- [x] Allow NTP-Config on ESP8266
+- [x] HTTP OTA Update capability on ESP8266
+- [ ] Add ESP32 Support
+  
 <br/><br/>
 **Contact:**
+* Calvin Köcher
 * calvin.koecher@outlook.de
 * https://www.imakeyouintelligent.com

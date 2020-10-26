@@ -63,8 +63,8 @@ void ArduinoOS_wifi::loop(){
     if(ntp_enable && ntp_server && connected() && (unsigned long)(millis()-t2)>=10000&&(t2=millis())){
         timeClient.update();
     };
-    yield();
-    delay(0);
+    //YIELD
+    for(uint8_t i{0};i<100;i++) yield();
 };
 
 //Methods
@@ -77,7 +77,7 @@ bool ArduinoOS_wifi::config(uint8_t s){
         WiFi.mode(WIFI_STA);
         WiFi.hostname(hostname); 
         WiFi.mode(WIFI_OFF);
-        //wifi_set_sleep_type(NONE_SLEEP_T); //https://blog.creations.de/?p=149
+        //wifi_set_sleep_type(NONE_SLEEP_T); //https://blog.creations.de/?p=149 //Remove ??
 
         //Telnet
         if(TelnetServer) delete TelnetServer;
@@ -122,7 +122,7 @@ bool ArduinoOS_wifi::config(uint8_t s){
         WiFi.softAPConfig(IPAddress(192, 168, 100, 1), IPAddress(192, 168, 100, 1), IPAddress(255, 255, 255, 0));
         WiFi.softAP(hostname,ap_password);
     };
-    if(!sta_enable && !ap_enable) WiFi.mode(WIFI_OFF);
+    if(!sta_enable && !ap_enable) WiFi.mode(WIFI_OFF);  //Remove ??
 
     return true;
 };
@@ -148,7 +148,7 @@ void ArduinoOS_wifi::telnetLoop(){
         o(0x07,false);
         p(textEscClear);
         p(textWelcome);
-        listCommands();
+        listCommands();             //Unfify with Serial ??
         terminalNl(true);
         break;
       };
@@ -257,9 +257,10 @@ void ArduinoOS_wifi::interface_ping(char** c,uint8_t n){
 void ArduinoOS_wifi::interface_firmware(char** c,uint8_t n){
     if(n==2){
         String url = c[1];
+        snprintf(OUT,LONG,"[HTTP UPDATE] Requesting: %s",url.c_str());o(OUT);
         ESPhttpUpdate.setLedPin(STATUSLED,0);
         ESPhttpUpdate.onProgress([](unsigned int p,unsigned int t){
-            snprintf(OUT,LONG,"[HTTP install] Downloading: %u of %u Bytes",p,t);o(OUT);
+            snprintf(OUT,LONG,"[HTTP UPDATE] Downloading: %u of %u Bytes",p,t);o(OUT);
         });
         t_httpUpdate_return ret;
         if(url.startsWith("https")){
