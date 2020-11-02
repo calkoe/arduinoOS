@@ -2,88 +2,93 @@
 
 //Global
 bool                ArduinoOS::isBegin = false;
-HardwareSerial      ArduinoOS::serialInstance{Serial};
+HardwareSerial*     ArduinoOS::serialInstance{&Serial};
 ArduinoOS::AOS_CMD* ArduinoOS::aos_cmd{nullptr};
 ArduinoOS::AOS_VAR* ArduinoOS::aos_var{nullptr};
 ArduinoOS::AOS_EVT* ArduinoOS::aos_evt{nullptr};
-uint8_t             ArduinoOS::IOC{0};
+u8                  ArduinoOS::IOC{0};
 unsigned            ArduinoOS::IOP[]{0};
 char                ArduinoOS::IO[][LONG]{0};
 char                ArduinoOS::OUT[LONG]{0};
-uint8_t             ArduinoOS::status{5};
+u8                  ArduinoOS::status{5};
 unsigned            ArduinoOS::usedEeprom{0};
-bool                ArduinoOS::serialEcho{true};
-bool                ArduinoOS::enableWatchdog{true};
-bool                ArduinoOS::enableSerial{true};
-unsigned int        ArduinoOS::serialBaud{SERSPEED};
+bool                ArduinoOS::watchdogEnable{false};
+bool                ArduinoOS::serialEnable{true};
+u32                 ArduinoOS::serialBaud{SERSPEED};
 bool                ArduinoOS::autoLoad{true};
 bool                ArduinoOS::autoReset{true};
 bool                ArduinoOS::locked{false};
-uint8_t             ArduinoOS::statusLed{STATUSLED};
+u8                  ArduinoOS::statusLed{STATUSLED};
 String              ArduinoOS::date{__DATE__ " " __TIME__};
 String              ArduinoOS::date_temp{date};
 String              ArduinoOS::hostname{"arduinoOS"};
-String              ArduinoOS::password{"root"};
-String              ArduinoOS::firmware{"generic"};
+String              ArduinoOS::password{"aos"};
+String              ArduinoOS::firmware{"-"};
 ArduinoOS::ArduinoOS(){
-    addVariable("sys/date", date,"",true,true);
-    addVariable("sys/hostname", hostname,"");
-    addVariable("sys/password", password,"");
-    addCommand("gpio",aos_gpio,"🖥  gpio [pin] [0|1]");
-    addCommand("help",aos_help,"",true);
-    addCommand("load",aos_load,"",true);
-    addCommand("save",aos_save,"",true);
-    addCommand("get",aos_get,"🖥  get [filter]");
-    addCommand("set",aos_set,"🖥  set [par] [val]");
-    addCommand("status",aos_stats,"🖥");
-    addCommand("clear",aos_clear,"",true);
-    addCommand("lock",aos_lock,"🖥");
-    addCommand("reboot",aos_reboot,"🖥");
-    addCommand("reset",aos_reset,"🖥");
+    variableAdd("sys/date", date,"",true,true);
+    variableAdd("sys/hostname", hostname,"");
+    variableAdd("sys/password", password,"");
+    commandAdd("gpio",aos_gpio,"🖥  gpio [pin] [0|1]");
+    commandAdd("help",aos_help,"",true);
+    commandAdd("load",aos_load,"",true);
+    commandAdd("save",aos_save,"",true);
+    commandAdd("get",aos_get,"🖥  get [filter]");
+    commandAdd("set",aos_set,"🖥  set [par] [val]");
+    commandAdd("status",aos_stats,"🖥");
+    commandAdd("clear",aos_clear,"",true);
+    commandAdd("lock",aos_lock,"🖥");
+    commandAdd("reboot",aos_reboot,"🖥");
+    commandAdd("reset",aos_reset,"🖥");
 }
 void ArduinoOS::begin(){
-    isBegin         = true;
-    if(enableSerial) serialInstance.begin(serialBaud);
-    if(enableWatchdog) wdt_enable(WDTO_4S);
+    isBegin = true;
+    if(serialEnable) serialInstance->begin(serialBaud);
+    if(watchdogEnable) wdt_enable(WDTO_4S);
     #if defined ESP8266 || defined ESP32 
         EEPROM.begin(EEPROM_SIZE);
     #endif
     if(statusLed) pinMode(statusLed,OUTPUT);
-    if(autoLoad)  loadVariables();
+    if(autoLoad)  variableLoad();
     o(0x07,false);
     p(textEscClear);
     p(textWelcome);
     o(firmware);
     o("");
-    listCommands();
-    terminalNl(true);
+    commandList();
+    terminalPrefix();
+    clearBuffer(IO[IOC],LONG);
 };
 void ArduinoOS::loop(){
     //Read Serial
-    while(serialInstance.available()){
-        while(serialInstance.available())
-            charIn(serialInstance.read(),true);
-        delay(1);
+    while(serialEnable && serialInstance->available()){
+        while(serialInstance->available())
+            charIn(serialInstance->read(),true);
     }
     //Watchdog
     wdt_reset();
     //Events
-    loopEvent();
+    eventLoop();
     //Status LED
     if(statusLed){
-        static unsigned long t{0};
+        unsigned long t{0};
         if(!status)          digitalWrite(statusLed,1);
         else if(status==5)   digitalWrite(statusLed,0);
         else if((unsigned long)(millis()-t)>=200&&(t=millis())){
             static bool o{1};
-            static uint8_t p{0};
+            static u8 p{0};
             if(p<2*status) digitalWrite(statusLed,o=!o);
             if(p==10){p=0;o=1;}else p++;
         }
     };
 };
-//Events
-void ArduinoOS::listenEvent(char* name,void (*function)(void*)){
+
+/**
+ * Register new Event-Listener
+ * 
+ * @param name Event name
+ * @param function void (*function)(void*)
+*/
+void ArduinoOS::eventListen(char* name,void (*function)(void*)){
     AOS_EVT* e = new AOS_EVT{name,function,false,nullptr,nullptr};
     if(aos_evt == nullptr){
         aos_evt = e;
@@ -93,7 +98,15 @@ void ArduinoOS::listenEvent(char* name,void (*function)(void*)){
         i->aos_evt = e;
     }
 };
-void ArduinoOS::emitEvent(char* name,void* value,bool now){
+
+/**
+ * Emit event
+ * 
+ * @param name Event Name
+ * @param value Pass Value to listener
+ * @param now Call Listener immediately or on next loop
+*/
+void ArduinoOS::eventEmit(char* name,void* value,bool now){
     AOS_EVT* i{aos_evt};
     while(i != nullptr){
         if(!strcmp(i->name,name)){
@@ -108,7 +121,11 @@ void ArduinoOS::emitEvent(char* name,void* value,bool now){
         i = i->aos_evt;
     };
 };
-void ArduinoOS::loopEvent(){
+
+/**
+ * Manage Event Loop
+*/
+void ArduinoOS::eventLoop(){
     AOS_EVT* i{aos_evt};
     while(i != nullptr){
         if(i->active){
@@ -119,8 +136,16 @@ void ArduinoOS::loopEvent(){
     };
 };
 
-//Commands
-bool ArduinoOS::addCommand(char* name,void (*function)(char** param, uint8_t parCnt),char* description,bool hidden){
+/**
+ * Adds a new Command to CLI
+ * 
+ * @param name Command Name
+ * @param function void (*function)(char** param, u8 parCnt)
+ * @param description Command description
+ * @param hidden Hide Command in CLI
+ * @return bool true if Command added successfully
+*/
+bool ArduinoOS::commandAdd(char* name,void (*function)(char** param, u8 parCnt),char* description,bool hidden){
     AOS_CMD* b = new AOS_CMD{name,function,description,hidden,nullptr};
     if(aos_cmd == nullptr){
         aos_cmd = b;
@@ -140,7 +165,13 @@ bool ArduinoOS::addCommand(char* name,void (*function)(char** param, uint8_t par
     }
     return false;
 };
-void ArduinoOS::listCommands(char* filter){
+
+/**
+ * List aviable Commands on CLI
+ * 
+ * @param filter Filter on Command name
+*/
+void ArduinoOS::commandList(char* filter){
     p(textCommands);
     AOS_CMD* i{aos_cmd};
     while(i != nullptr){
@@ -150,7 +181,13 @@ void ArduinoOS::listCommands(char* filter){
         i = i->aos_cmd;
     };
 }
-void ArduinoOS::manCommand(char* name){
+
+/**
+ * Display Command manual on CLI
+ * 
+ * @param filter Filter by Command name
+*/
+void ArduinoOS::commandMan(char* name){
     AOS_CMD* i{aos_cmd};
     while(i != nullptr){
         if(!strcmp(i->name,name)){
@@ -161,7 +198,15 @@ void ArduinoOS::manCommand(char* name){
     };
     return;
 }
-bool ArduinoOS::callCommand(char* name,char** param, uint8_t parCnt){
+
+/**
+ * Run Command with Parameter
+ * 
+ * @param name Name of the Command
+ * @param param Parameter
+ * @param paramCnt Parameter count
+*/
+bool ArduinoOS::commandCall(char* name,char** param, u8 parCnt){
     AOS_CMD* i{aos_cmd};
     while(i != nullptr){
         if(!strncmp(i->name,name,SHORT)){
@@ -174,11 +219,11 @@ bool ArduinoOS::callCommand(char* name,char** param, uint8_t parCnt){
 }
 
 //Variables
-bool ArduinoOS::addVariable(char* n,bool& v,char* d,bool h,bool p)  {return _addVariable(n,&v,d,h,p,AOS_DT_BOOL);};
-bool ArduinoOS::addVariable(char* n,int& v,char* d,bool h,bool p)   {return _addVariable(n,&v,d,h,p,AOS_DT_INT);};
-bool ArduinoOS::addVariable(char* n,double& v,char* d,bool h,bool p){return _addVariable(n,&v,d,h,p,AOS_DT_DOUBLE);};
-bool ArduinoOS::addVariable(char* n,String& v,char* d,bool h,bool p){return _addVariable(n,&v,d,h,p,AOS_DT_STRING);};
-bool ArduinoOS::_addVariable(char* name,void* value,char* description,bool hidden,bool protect,AOS_DT aos_dt){
+bool ArduinoOS::variableAdd(char* n,bool& v,char* d,bool h,bool p)  {return _variableAdd(n,&v,d,h,p,AOS_DT_BOOL);};
+bool ArduinoOS::variableAdd(char* n,int& v,char* d,bool h,bool p)   {return _variableAdd(n,&v,d,h,p,AOS_DT_INT);};
+bool ArduinoOS::variableAdd(char* n,double& v,char* d,bool h,bool p){return _variableAdd(n,&v,d,h,p,AOS_DT_DOUBLE);};
+bool ArduinoOS::variableAdd(char* n,String& v,char* d,bool h,bool p){return _variableAdd(n,&v,d,h,p,AOS_DT_STRING);};
+bool ArduinoOS::_variableAdd(char* name,void* value,char* description,bool hidden,bool protect,AOS_DT aos_dt){
     if(isBegin){
         p(textErrorBegin);
         return false;
@@ -204,7 +249,7 @@ bool ArduinoOS::_addVariable(char* name,void* value,char* description,bool hidde
     } 
     return false;
 };
-void ArduinoOS::listVariables(char* filter){
+void ArduinoOS::variableList(char* filter){
     p(textVariables);
     AOS_VAR* i{aos_var};
     while(i != nullptr){
@@ -218,7 +263,7 @@ void ArduinoOS::listVariables(char* filter){
         i = i->aos_var;
     };
 }
-bool ArduinoOS::setVariable(char* name,char* value){
+bool ArduinoOS::variableSet(char* name,char* value){
     AOS_VAR* i{aos_var};
     while(i != nullptr){
         if(!strcmp(i->name,name)){
@@ -233,7 +278,7 @@ bool ArduinoOS::setVariable(char* name,char* value){
     };
     return false;
 };
-void* ArduinoOS::getValue(char* name){
+void* ArduinoOS::variableGet(char* name){
     AOS_VAR* i{aos_var};
     while(i != nullptr){
         if(!strcmp(i->name,name)) return i->value;
@@ -241,7 +286,7 @@ void* ArduinoOS::getValue(char* name){
     };
     return nullptr;
 };
-void ArduinoOS::loadVariables(bool save){
+void ArduinoOS::variableLoad(bool save){
     AOS_VAR* i{aos_var};unsigned int p{0};
     while(i != nullptr){
             if(i->aos_dt==AOS_DT_BOOL){
@@ -269,7 +314,7 @@ void ArduinoOS::loadVariables(bool save){
                     *(String*)(i->value) = "";
                     while(true){
                         char b = EEPROM.read(p);p++;
-                        if((uint8_t)b == (char)0) break;
+                        if((u8)b == (char)0) break;
                         *(String*)(i->value)+=b; 
                         if((*(String*)(i->value)).length() >= LONG) break;
                     }
@@ -277,7 +322,7 @@ void ArduinoOS::loadVariables(bool save){
             }
             if((date != date_temp && autoReset || date == "!") && !save){
                 o("RESET");date=date_temp;
-                loadVariables(true);return;
+                variableLoad(true);return;
             }
         i = i->aos_var;
     };
@@ -290,8 +335,8 @@ void ArduinoOS::loadVariables(bool save){
 //Interface
 void ArduinoOS::o(const char* ca,bool nl){
     if(ca){
-        if(enableSerial) serialInstance.print(ca);
-        emitEvent("o",(void*)ca,true);
+        if(serialEnable) serialInstance->print(ca);
+        eventEmit("o",(void*)ca,true);
     }
     if(nl) o("\r\n",false);
 };
@@ -311,24 +356,22 @@ void ArduinoOS::p(const char* ca,bool nl){
 void ArduinoOS::charIn(char c,bool echo){
         //o((String)(int)c,false);
         static char lc{c};
-        if(charEsc(c)) return;                                      //Filter ESC 
-        if(c != 13 && c != 10 && echo) o(c,false);                  //No Echo CR + NL
-        if(c == 127 || c == 8){                                     //DEL BACKSPACE
+        if(charEsc(c)) return;                                             //Filter ESC 
+        if(c != 13 && c != 10 && c != 8 && c != 127 && echo) o(c,false);   //No Echo CR or NL or Backspace or DEL 
+        if(c == 8 || c == 127){                                            //BACKSPACE or DEL
             if(IOP[IOC] > 0){
                 IO[IOC][--IOP[IOC]] = 0;
-                terminalLine();
-            }else{
-                o(7,false);                                         //BELL
+                o("\b \b",false);
             }
-        }else if(c == 9){}                                          //TAB
-        else if(c != 13 && c != 10 && IOP[IOC] < LONG-1){           //CR NL
+        }else if(c != 13 && c != 10 && IOP[IOC] < LONG-1){                  //CR NL
             IO[IOC][IOP[IOC]++] = c;                    
-        }else if(!(lc == 13 && c == 10)){                           //CR NL 
-            o(13,false);o(10,false);                                //CR NL
+        }else if(!(lc == 13 && c == 10)){                                   //CR NL 
+            o(13,false);o(10,false);                                        //CR NL
             if(IOP[IOC]>0 && !locked) terminalParseCommand();
             if(!strcmp(IO[IOC],password.c_str())) locked = false;
             IOC = !IOC;
-            terminalNl(true);
+            terminalPrefix();
+            clearBuffer(IO[IOC],LONG);
         }
         lc=c;
 };
@@ -354,23 +397,6 @@ bool ArduinoOS::charEsc(char c){
                 IOC = !IOC;
                 terminalLine();
                 break;
-            /*case 0x43:  //Cursor Right
-                if(IOP[IOC] < LONG-1){
-                    o("\e[1C",false);
-                } IOP[IOC]++;
-                break;
-            case 0x44:  //Cursor Left
-                if(IOP[IOC] > 0){
-                    IOP[IOC]--;
-                    o("\e[1D",false);
-                }
-
-                break;
-            case 0x30:  //Cursor OK
-                break;
-            case 0x6e:  //Cursor Closing
-                break;
-            */
         };
         charInEsc = ESC_STATE_NONE;
         ret = true;
@@ -380,43 +406,37 @@ bool ArduinoOS::charEsc(char c){
 void ArduinoOS::clearBuffer(char* ca,unsigned int l){
     for(unsigned int i{0};i<l;i++)ca[i]=0;IOP[IOC]=0;
 };
-void ArduinoOS::terminalNl(bool clear){
+void ArduinoOS::terminalPrefix(){
     if(locked){
         p(textEnterPassword,false);
     }else{
         snprintf(OUT,LONG,"%s:/>",hostname.c_str());o(OUT,false);
     };
-    if(clear) clearBuffer(IO[IOC],LONG);
 }
 void ArduinoOS::terminalLine(){
-    o("\e[2K",false);o(0x0D,false);
-    terminalNl(false);
+    o("\r",false);
+    for(u8 i{0};i<LONG;i++) o(32,false);
+    o("\r",false);
+    terminalPrefix();
     o(IO[IOC],false);
 }
 void ArduinoOS::terminalParseCommand(){
-    uint8_t parCnt{0};
-    char*   param[SHORT]{NULL};
-    unsigned s{0};
+    u8     parCnt{0};
+    char*       param[SHORT]{NULL};
+    char        search{' '};
+    unsigned    s{0};
     for(unsigned i{0};i<LONG;i++){
+        if(IO[IOC][i] == 0) break;
+        while((IO[IOC][i] == '"' || IO[IOC][i] == ' ') && IO[IOC][i] != 0) search = IO[IOC][i++];
         s = i;
-        while(IO[IOC][i] != 32 && IO[IOC][i]){
-            if(IO[IOC][i] == 34 && IO[IOC][i-1] != 27){
-                s = ++i;
-                while((IO[IOC][i] != 34 || IO[IOC][i-1] == 27) && IO[IOC][i]) i++;
-                break;
-            }
-            i++;
-        };
-        if(i!=s){
-            char* buffer = (char*)malloc(i-s+1);
-            for(unsigned j{0};j<(i-s);j++) buffer[j] = IO[IOC][s+j];
-            buffer[i-s] = 0;param[parCnt++] = buffer;
-        }
-        if(!IO[IOC][i]) break;
+        while(IO[IOC][i] != search && IO[IOC][i] != 0) i++;
+        char* buffer = (char*)malloc(i-s+1);
+        for(unsigned j{0};j<(i-s);j++) buffer[j] = IO[IOC][s+j];
+        buffer[i-s] = 0;param[parCnt++] = buffer;
     }
-
-    if(parCnt>0) if(!callCommand(param[0],param,parCnt)) p(textCommandNotFound);
-    for(uint8_t i{0};i<parCnt;i++) delete param[i];
+    if(parCnt>0) if(!commandCall
+    (param[0],param,parCnt)) p(textCommandNotFound);
+    for(u8 i{0};i<parCnt;i++) delete param[i];
 };
 
 //API
@@ -444,7 +464,7 @@ int ArduinoOS::freeMemory() {
 #endif
 
 //Interface Methods
-void ArduinoOS::aos_gpio(char** param,uint8_t parCnt){
+void ArduinoOS::aos_gpio(char** param,u8 parCnt){
     if(parCnt == 2){
       pinMode(atoi(param[1]),INPUT);
         if(digitalRead(atoi(param[1])))
@@ -456,64 +476,64 @@ void ArduinoOS::aos_gpio(char** param,uint8_t parCnt){
       digitalWrite(atoi(param[1]),atoi(param[2]));
     }else{
       p(textInvalidParameter);
-      manCommand("gpio");
+      commandMan("gpio");
       return;
     }
 }
-void ArduinoOS::aos_help(char** param,uint8_t parCnt){
+void ArduinoOS::aos_help(char** param,u8 parCnt){
     if(parCnt == 1)
-      listCommands();
+      commandList();
     if(parCnt == 2)
-      listCommands(param[1]);
+      commandList(param[1]);
 };
-void ArduinoOS::aos_load(char** param,uint8_t parCnt){
-    loadVariables(false);
+void ArduinoOS::aos_load(char** param,u8 parCnt){
+    variableLoad(false);
     p(textOk);
 };
-void ArduinoOS::aos_save(char** param,uint8_t parCnt){
-    loadVariables(true);
+void ArduinoOS::aos_save(char** param,u8 parCnt){
+    variableLoad(true);
     p(textOk);
 };
-void ArduinoOS::aos_get(char** param,uint8_t parCnt){
+void ArduinoOS::aos_get(char** param,u8 parCnt){
     if(parCnt == 2)
-        listVariables(param[1]);
+        variableList(param[1]);
     else
-        listVariables();
+        variableList();
 };
-void ArduinoOS::aos_set(char** param,uint8_t parCnt){
+void ArduinoOS::aos_set(char** param,u8 parCnt){
     if(parCnt < 2 || parCnt > 3){
         p(textInvalidParameter);
-        manCommand("set");
+        commandMan("set");
         return;
     }
-    if(setVariable(param[1],param[2])){
-      loadVariables(true);
+    if(variableSet(param[1],param[2])){
+      variableLoad(true);
       p(textOk);
     }else{
       p(textNotFound); 
     } 
 };
-void ArduinoOS::aos_stats(char** param,uint8_t parCnt){
+void ArduinoOS::aos_stats(char** param,u8 parCnt){
     o("🖥  System:");
     snprintf(OUT,LONG,"%-20s : %s","FIRMWARE",firmware.c_str());o(OUT);
     snprintf(OUT,LONG,"%-20s : %s","COMPILED",date.c_str());o(OUT);
     snprintf(OUT,LONG,"%-20s : %d B","HEAP",freeMemory());o(OUT);
     snprintf(OUT,LONG,"%-20s : %d B","EERPOM",usedEeprom);o(OUT);
 };
-void ArduinoOS::aos_clear(char** param,uint8_t parCnt){
+void ArduinoOS::aos_clear(char** param,u8 parCnt){
     p(textEscClear);
 };
-void ArduinoOS::aos_lock(char** param,uint8_t parCnt){
+void ArduinoOS::aos_lock(char** param,u8 parCnt){
     locked = true;
 };
-void ArduinoOS::aos_reboot(char** param,uint8_t parCnt){
+void ArduinoOS::aos_reboot(char** param,u8 parCnt){
     #if defined ESP8266
       ESP.restart();
     #endif
     for(int i{0};;i++){o('.',false);delay(333);}
 };
-void ArduinoOS::aos_reset(char** param,uint8_t parCnt){
+void ArduinoOS::aos_reset(char** param,u8 parCnt){
     date = "!";
-    loadVariables(true);
+    variableLoad(true);
     aos_reboot(0,0);
 }

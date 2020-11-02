@@ -15,8 +15,8 @@ class ArduinoOS_wifi : public ArduinoOS{
     private:
 
         //Methods
-        static bool config(uint8_t);
-        static int  calcRSSI(int);
+        static bool config(u8);
+        static s32  calcRSSI(s32);
 
         //NTP
         static WiFiUDP   wifiUDP;
@@ -34,11 +34,11 @@ class ArduinoOS_wifi : public ArduinoOS{
     protected:
 
         //Interface
-        static void interface_status(char**,uint8_t);
-        static void interface_scan(char**,uint8_t);
-        static void interface_connect(char**,uint8_t);
-        static void interface_ping(char**,uint8_t);
-        static void interface_firmware(char**,uint8_t);
+        static void interface_status(char**,u8);
+        static void interface_scan(char**,u8);
+        static void interface_connect(char**,u8);
+        static void interface_ping(char**,u8);
+        static void interface_firmware(char**,u8);
 
 
     public:
@@ -53,7 +53,7 @@ class ArduinoOS_wifi : public ArduinoOS{
         static bool   telnet_enable;
         static bool   ntp_enable;
         static String ntp_server;
-        static int    ntp_offset;
+        static s32    ntp_offset;
         static bool   sta_enable;
         static String sta_network;
         static String sta_password;
