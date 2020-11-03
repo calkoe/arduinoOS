@@ -11,7 +11,6 @@ class ArduinoOS_mqtt : public ArduinoOS_wifi{
         //Global
         static WiFiClient*          net;
         static WiFiClientSecure*    netSecure;
-        static bool connected;
         struct SUB {
             char*       topic;
             u8          qos;
@@ -25,11 +24,6 @@ class ArduinoOS_mqtt : public ArduinoOS_wifi{
         static void handle(MQTTClient*, char*, char*, s32);
         
     protected:
-
-        //Interface
-        static void interface_status(char**,u8);
-        static void interface_connect(char**,u8);
-        static void interface_publish(char**,u8);
 
     public:
 
@@ -46,14 +40,15 @@ class ArduinoOS_mqtt : public ArduinoOS_wifi{
         static void unsubscripe(char*);
 
         //API Settings
-        static bool         enable;
-        static String       server;
-        static s32          port;
-        static bool         tls;
-        static bool         tlsVerify;
-        static String       clientID;
-        static String       user;
-        static String       password;
+        static bool         mqtt_connected;
+        static bool         mqtt_enable;
+        static String       mqtt_server;
+        static s32          mqtt_port;
+        static bool         mqtt_tls;
+        static bool         mqtt_tlsVerify;
+        static String       mqtt_clientID;
+        static String       mqtt_user;
+        static String       mqtt_password;
 
 };
 

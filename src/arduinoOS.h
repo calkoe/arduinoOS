@@ -70,13 +70,12 @@ class ArduinoOS{
             AOS_EVT*    aos_evt;
         };
         struct AOS_TASK {
-            char*       name;
-            void        (*function)();
-            bool        active;
-            u64         timestamp;
-            u16         interval;
-            bool        single;
-            AOS_EVT*    aos_task;
+            u16                 id;
+            void                (*function)();
+            unsigned long       timestamp;
+            u16                 interval;
+            bool                repeat;
+            AOS_TASK*           aos_task;
         };
         static unsigned         usedEeprom;
         static AOS_CMD*         aos_cmd;
@@ -94,26 +93,13 @@ class ArduinoOS{
         static char             IO[2][LONG];
         static char             OUT[LONG];
 
-        //Interface
-        static void aos_gpio(char**,u8);
-        static void aos_help(char**,u8);
-        static void aos_load(char**,u8);
-        static void aos_save(char**,u8);
-        static void aos_get(char**,u8);
-        static void aos_set(char**,u8);
-        static void aos_stats(char**,u8);
-        static void aos_clear(char**,u8);
-        static void aos_lock(char**,u8);
-        static void aos_reboot(char**,u8);
-        static void aos_reset(char**,u8);
-
         //IO
         static void    charIn(char,bool);
         static bool    charEsc(char);
-        static void    terminalPrefix();
-        static void    terminalLine();
         static void    clearBuffer(char*,unsigned int);
         static bool    _variableAdd(char*,void*,char*,bool,bool,AOS_DT);
+        static void    terminalPrefix();
+        static void    terminalLine();
         static void    terminalParseCommand();
 
 
@@ -142,7 +128,10 @@ class ArduinoOS{
         static String           firmware;
 
         //API TASKS
-
+        static u16              setInterval(void(*)(),u16);
+        static u16              setTimeout(void(*)(),u16,bool=false);
+        static AOS_TASK*        unsetInterval(u16);
+        static void             taskLoop();
 
         //API Events
         static void             eventListen(char*,void(*)(void*));

@@ -22,9 +22,6 @@ class ArduinoOS_wifi : public ArduinoOS{
         static WiFiUDP   wifiUDP;
         static NTPClient timeClient;
 
-        //DNS
-        //static DNSServer dnsServer;
-
         //Telnet
         static void telnetLoop();
         static void telnetOut(void*);
@@ -33,21 +30,12 @@ class ArduinoOS_wifi : public ArduinoOS{
         
     protected:
 
-        //Interface
-        static void interface_status(char**,u8);
-        static void interface_scan(char**,u8);
-        static void interface_connect(char**,u8);
-        static void interface_ping(char**,u8);
-        static void interface_firmware(char**,u8);
-
-
     public:
 
         //Global
         ArduinoOS_wifi();
         static void begin();
         static void loop();
-        static bool connected();
 
         //API Settings
         static bool   telnet_enable;
@@ -61,6 +49,7 @@ class ArduinoOS_wifi : public ArduinoOS{
         static String sta_subnet;
         static String sta_gateway;
         static String sta_dns;
+        static bool   sta_connected();
         static bool   ap_enable;
         static String ap_network;
         static String ap_password;

@@ -1,46 +1,56 @@
 #include <arduinoOS.h>
 
 //Global
-bool                ArduinoOS::isBegin = false;
-HardwareSerial*     ArduinoOS::serialInstance{&Serial};
-ArduinoOS::AOS_CMD* ArduinoOS::aos_cmd{nullptr};
-ArduinoOS::AOS_VAR* ArduinoOS::aos_var{nullptr};
-ArduinoOS::AOS_EVT* ArduinoOS::aos_evt{nullptr};
-u8                  ArduinoOS::IOC{0};
-unsigned            ArduinoOS::IOP[]{0};
-char                ArduinoOS::IO[][LONG]{0};
-char                ArduinoOS::OUT[LONG]{0};
-u8                  ArduinoOS::status{5};
-unsigned            ArduinoOS::usedEeprom{0};
-bool                ArduinoOS::watchdogEnable{false};
-bool                ArduinoOS::serialEnable{true};
-u32                 ArduinoOS::serialBaud{SERSPEED};
-bool                ArduinoOS::autoLoad{true};
-bool                ArduinoOS::autoReset{true};
-bool                ArduinoOS::locked{false};
-u8                  ArduinoOS::statusLed{STATUSLED};
-String              ArduinoOS::date{__DATE__ " " __TIME__};
-String              ArduinoOS::date_temp{date};
-String              ArduinoOS::hostname{"arduinoOS"};
-String              ArduinoOS::password{"aos"};
-String              ArduinoOS::firmware{"-"};
-ArduinoOS::ArduinoOS(){
-    variableAdd("sys/date", date,"",true,true);
-    variableAdd("sys/hostname", hostname,"");
-    variableAdd("sys/password", password,"");
-    commandAdd("gpio",aos_gpio,"🖥  gpio [pin] [0|1]");
-    commandAdd("help",aos_help,"",true);
-    commandAdd("load",aos_load,"",true);
-    commandAdd("save",aos_save,"",true);
-    commandAdd("get",aos_get,"🖥  get [filter]");
-    commandAdd("set",aos_set,"🖥  set [par] [val]");
-    commandAdd("status",aos_stats,"🖥");
-    commandAdd("clear",aos_clear,"",true);
-    commandAdd("lock",aos_lock,"🖥");
-    commandAdd("reboot",aos_reboot,"🖥");
-    commandAdd("reset",aos_reset,"🖥");
-}
+bool                    ArduinoOS::isBegin = false;
+HardwareSerial*         ArduinoOS::serialInstance{&Serial};
+ArduinoOS::AOS_CMD*     ArduinoOS::aos_cmd{nullptr};
+ArduinoOS::AOS_VAR*     ArduinoOS::aos_var{nullptr};
+ArduinoOS::AOS_EVT*     ArduinoOS::aos_evt{nullptr};
+ArduinoOS::AOS_TASK*    ArduinoOS::aos_task{nullptr};
+u8                      ArduinoOS::IOC{0};
+unsigned                ArduinoOS::IOP[]{0};
+char                    ArduinoOS::IO[][LONG]{0};
+char                    ArduinoOS::OUT[LONG]{0};
+u8                      ArduinoOS::status{5};
+unsigned                ArduinoOS::usedEeprom{0};
+bool                    ArduinoOS::watchdogEnable{false};
+bool                    ArduinoOS::serialEnable{true};
+u32                     ArduinoOS::serialBaud{SERSPEED};
+bool                    ArduinoOS::autoLoad{true};
+bool                    ArduinoOS::autoReset{true};
+bool                    ArduinoOS::locked{false};
+u8                      ArduinoOS::statusLed{STATUSLED};
+String                  ArduinoOS::date{__DATE__ " " __TIME__};
+String                  ArduinoOS::date_temp{date};
+String                  ArduinoOS::hostname{"arduinoOS"};
+String                  ArduinoOS::password{"aos"};
+String                  ArduinoOS::firmware{"-"};
+
 void ArduinoOS::begin(){
+    //Status LED
+    if(statusLed){
+        setInterval([](){
+            if(!status)          digitalWrite(statusLed,1);
+            else if(status==5)   digitalWrite(statusLed,0);
+            else{
+                static bool o{1};
+                static u8 p{0};
+                if(p<2*status) digitalWrite(statusLed,o=!o);
+                if(p==10){p=0;o=1;}else p++;
+            }
+        },200);
+    };
+    //LOOP 10ms
+    setInterval([](){
+        //Watchdog
+        wdt_reset();
+        //Read Serial
+        while(serialEnable && serialInstance->available()){
+            while(serialInstance->available())
+                charIn(serialInstance->read(),true);
+        }
+    },10);
+    //Setup
     isBegin = true;
     if(serialEnable) serialInstance->begin(serialBaud);
     if(watchdogEnable) wdt_enable(WDTO_4S);
@@ -59,27 +69,84 @@ void ArduinoOS::begin(){
     clearBuffer(IO[IOC],LONG);
 };
 void ArduinoOS::loop(){
-    //Read Serial
-    while(serialEnable && serialInstance->available()){
-        while(serialInstance->available())
-            charIn(serialInstance->read(),true);
-    }
-    //Watchdog
-    wdt_reset();
     //Events
     eventLoop();
-    //Status LED
-    if(statusLed){
-        unsigned long t{0};
-        if(!status)          digitalWrite(statusLed,1);
-        else if(status==5)   digitalWrite(statusLed,0);
-        else if((unsigned long)(millis()-t)>=200&&(t=millis())){
-            static bool o{1};
-            static u8 p{0};
-            if(p<2*status) digitalWrite(statusLed,o=!o);
-            if(p==10){p=0;o=1;}else p++;
+    //Tasks
+    taskLoop();
+};
+
+/**
+ * Set Interval
+ * 
+ * @param  function Function Callback
+ * @param  intervall
+ * @return intervall Id
+*/
+u16 ArduinoOS::setInterval(void(*f)(),u16 i){
+    return setTimeout(f,i,true);
+};
+
+/**
+ * Set Timeout
+ * 
+ * @param  function Function Callback
+ * @param  intervall 
+ * @param  repeat 
+ * @return timeout Id
+*/
+u16 ArduinoOS::setTimeout(void(*f)(),u16 i, bool repeat){
+    static u16 idSerial{1};
+    AOS_TASK* e = new AOS_TASK{idSerial,f,millis(),i,repeat,nullptr};
+    if(!aos_task){
+        aos_task = e;
+    }else{
+        AOS_TASK* i{aos_task};
+        while(i->aos_task) i = i->aos_task;
+        i->aos_task = e;
+    }
+    return idSerial++;
+};
+
+/**
+ * Unset Interval
+ * 
+ * @param idDel IntervalID
+*/
+ArduinoOS::AOS_TASK* ArduinoOS::unsetInterval(u16 idDel){
+    if(!aos_task) return false;
+    if(aos_task->id == idDel){
+        AOS_TASK* d{aos_task}; 
+        aos_task = aos_task->aos_task;
+        delete d;
+        return nullptr;
+    }
+    AOS_TASK* i{aos_task};
+    while(i->aos_task){
+        if(i->aos_task->id == idDel){
+            AOS_TASK* d{i->aos_task}; 
+            i->aos_task = i->aos_task->aos_task;
+            delete d;
+            return i->aos_task;
         }
-    };
+        i = i->aos_task;
+    }
+    return nullptr;
+};
+
+/**
+ * Manage Task Loop
+*/
+void ArduinoOS::taskLoop(){
+    AOS_TASK* i{aos_task};
+    u16 id{0};
+    while(i){
+        if(i->interval && (unsigned long)(millis()-i->timestamp)>=i->interval){
+            //o("Abweichung: " + (String)(unsigned long)(ms-i->timestamp));
+            (*(i->function))();
+            i->timestamp = millis();
+            i = !i->repeat ? unsetInterval(i->id) : i->aos_task;
+        }else i = i->aos_task;
+    }
 };
 
 /**
@@ -439,8 +506,7 @@ void ArduinoOS::terminalParseCommand(){
     for(u8 i{0};i<parCnt;i++) delete param[i];
 };
 
-//API
-
+//Interface Methods
 #if not defined ESP8266
 #ifdef __arm__
 // should use uinstd.h to define sbrk but Due causes a conflict
@@ -463,77 +529,83 @@ int ArduinoOS::freeMemory() {
   int ArduinoOS::freeMemory() { return ESP.getFreeHeap(); };
 #endif
 
-//Interface Methods
-void ArduinoOS::aos_gpio(char** param,u8 parCnt){
-    if(parCnt == 2){
-      pinMode(atoi(param[1]),INPUT);
-        if(digitalRead(atoi(param[1])))
-            o("1"); 
-        else
-            o("0"); 
-    }else if(parCnt == 3){
-      pinMode(atoi(param[1]),OUTPUT);
-      digitalWrite(atoi(param[1]),atoi(param[2]));
-    }else{
-      p(textInvalidParameter);
-      commandMan("gpio");
-      return;
-    }
-}
-void ArduinoOS::aos_help(char** param,u8 parCnt){
-    if(parCnt == 1)
-      commandList();
-    if(parCnt == 2)
-      commandList(param[1]);
-};
-void ArduinoOS::aos_load(char** param,u8 parCnt){
-    variableLoad(false);
-    p(textOk);
-};
-void ArduinoOS::aos_save(char** param,u8 parCnt){
-    variableLoad(true);
-    p(textOk);
-};
-void ArduinoOS::aos_get(char** param,u8 parCnt){
-    if(parCnt == 2)
-        variableList(param[1]);
-    else
-        variableList();
-};
-void ArduinoOS::aos_set(char** param,u8 parCnt){
-    if(parCnt < 2 || parCnt > 3){
+ArduinoOS::ArduinoOS(){
+    variableAdd("sys/date",     date,"",true,true);
+    variableAdd("sys/hostname", hostname,"");
+    variableAdd("sys/password", password,"");
+
+    commandAdd("gpio",[](char** param,u8 parCnt){
+        if(parCnt == 2){
+        pinMode(atoi(param[1]),INPUT);
+            if(digitalRead(atoi(param[1])))
+                o("1"); 
+            else
+                o("0"); 
+        }else if(parCnt == 3){
+        pinMode(atoi(param[1]),OUTPUT);
+        digitalWrite(atoi(param[1]),atoi(param[2]));
+        }else{
         p(textInvalidParameter);
-        commandMan("set");
+        commandMan("gpio");
         return;
-    }
-    if(variableSet(param[1],param[2])){
-      variableLoad(true);
-      p(textOk);
-    }else{
-      p(textNotFound); 
-    } 
-};
-void ArduinoOS::aos_stats(char** param,u8 parCnt){
-    o("🖥  System:");
-    snprintf(OUT,LONG,"%-20s : %s","FIRMWARE",firmware.c_str());o(OUT);
-    snprintf(OUT,LONG,"%-20s : %s","COMPILED",date.c_str());o(OUT);
-    snprintf(OUT,LONG,"%-20s : %d B","HEAP",freeMemory());o(OUT);
-    snprintf(OUT,LONG,"%-20s : %d B","EERPOM",usedEeprom);o(OUT);
-};
-void ArduinoOS::aos_clear(char** param,u8 parCnt){
-    p(textEscClear);
-};
-void ArduinoOS::aos_lock(char** param,u8 parCnt){
-    locked = true;
-};
-void ArduinoOS::aos_reboot(char** param,u8 parCnt){
-    #if defined ESP8266
-      ESP.restart();
-    #endif
-    for(int i{0};;i++){o('.',false);delay(333);}
-};
-void ArduinoOS::aos_reset(char** param,u8 parCnt){
-    date = "!";
-    variableLoad(true);
-    aos_reboot(0,0);
+        }
+    },"🖥  gpio [pin] [0|1]");
+
+    commandAdd("help",[](char** param,u8 parCnt){
+        if(parCnt == 1)
+        commandList();
+        if(parCnt == 2)
+        commandList(param[1]);
+    },"",true);
+
+    commandAdd("get",[](char** param,u8 parCnt){
+        if(parCnt == 2)
+            variableList(param[1]);
+        else
+            variableList();
+    },"🖥  get [filter]");
+
+    commandAdd("set",[](char** param,u8 parCnt){
+        if(parCnt < 2 || parCnt > 3){
+            p(textInvalidParameter);
+            commandMan("set");
+            return;
+        }
+        if(variableSet(param[1],param[2])){
+        variableLoad(true);
+        p(textOk);
+        }else{
+        p(textNotFound); 
+        } 
+    },"🖥  set [par] [val]");
+
+    commandAdd("clear",[](char** param,u8 parCnt){
+        p(textEscClear);
+    },"",true);
+
+    commandAdd("lock",[](char** param,u8 parCnt){
+        locked = true;
+    },"🖥");
+
+    commandAdd("reboot",[](char** param,u8 parCnt){
+        #if defined ESP8266
+            ESP.restart();
+        #endif
+        for(int i{0};;i++){o('.',false);delay(333);}
+    },"🖥");
+
+    commandAdd("reset",[](char** param,u8 parCnt){
+        date = "!";
+        variableLoad(true);
+        commandCall("reboot");
+    },"🖥");
+
+    commandAdd("status", [](char** param,u8 parCnt){
+        o("🖥  System:");
+        snprintf(OUT,LONG,"%-20s : %s","FIRMWARE",firmware.c_str());o(OUT);
+        snprintf(OUT,LONG,"%-20s : %s","COMPILED",date.c_str());o(OUT);
+        snprintf(OUT,LONG,"%-20s : %d B","HEAP",freeMemory());o(OUT);
+        snprintf(OUT,LONG,"%-20s : %d B","EERPOM",usedEeprom);o(OUT);
+    },"🖥");
+
 }

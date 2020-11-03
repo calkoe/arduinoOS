@@ -1,58 +1,47 @@
 #include <arduinoOS_mqtt.h>
 #ifdef ESP8266
 
-bool                    ArduinoOS_mqtt::connected{false};
+bool                    ArduinoOS_mqtt::mqtt_connected{false};
 ArduinoOS_mqtt::SUB*    ArduinoOS_mqtt::sub{nullptr};
 WiFiClient*             ArduinoOS_mqtt::net;
 WiFiClientSecure*       ArduinoOS_mqtt::netSecure;
 MQTTClient*             ArduinoOS_mqtt::mqtt;
-bool                    ArduinoOS_mqtt::enable{true};
-String                  ArduinoOS_mqtt::server{};
-s32                     ArduinoOS_mqtt::port{1883};
-bool                    ArduinoOS_mqtt::tls{false};
-bool                    ArduinoOS_mqtt::tlsVerify{false};
-String                  ArduinoOS_mqtt::user{};
-String                  ArduinoOS_mqtt::password{};
-//Global
-ArduinoOS_mqtt::ArduinoOS_mqtt():ArduinoOS_wifi(){
-    variableAdd("mqtt/enable",    enable    ,           "📡 Enable MQTT");
-    variableAdd("mqtt/server",    server    ,           "📡 MQTT Server IP or Name");
-    variableAdd("mqtt/port",      port      ,           "📡 MQTT Server Port");
-    variableAdd("mqtt/tls",       tls       ,           "📡 Use TLS");
-    variableAdd("mqtt/tlsVerify", tlsVerify ,           "📡 Verify TLS Certificates");
-    variableAdd("mqtt/user",      user      ,           "📡 Username");
-    variableAdd("mqtt/password",  password  ,           "📡 Password");
-    commandAdd("status",          interface_status,     "🖥  Shows System / Wifi / MQTT status",false);
-    commandAdd("mqtt-connect",    interface_connect,    "📡 [server] [port] [user] [password] | Apply mqtt settings and connect to configured server",false);
-    commandAdd("mqtt-publish",    interface_publish,    "📡 [topic] [message] | publish a message to topic",false);
-};
+bool                    ArduinoOS_mqtt::mqtt_enable{false};
+String                  ArduinoOS_mqtt::mqtt_server{};
+s32                     ArduinoOS_mqtt::mqtt_port{1883};
+bool                    ArduinoOS_mqtt::mqtt_tls{false};
+bool                    ArduinoOS_mqtt::mqtt_tlsVerify{false};
+String                  ArduinoOS_mqtt::mqtt_user{};
+String                  ArduinoOS_mqtt::mqtt_password{};
 
 void ArduinoOS_mqtt::begin(){
     ArduinoOS_wifi::begin();
     config(0);
-};
-void ArduinoOS_mqtt::loop(){
-    ArduinoOS_wifi::loop();
-    if(enable)  mqtt->loop();
-    //Timer 1S
-    static unsigned long t{0};
-    if((unsigned long)(millis()-t)>=1000&&(t=millis())){
-        if(mqtt->connected()){
+    //1S Connection Management
+    setInterval([](){
+        if(mqtt_enable && mqtt_server && mqtt->connected()){
             if(ArduinoOS::status == 2) ArduinoOS::status = 5;
-            if(!connected){
-                connected = true;
+            if(!mqtt_connected){
+                mqtt_connected = true;
                 SUB* t = sub;
                 while(t){
                     mqtt->subscribe(t->topic,t->qos);
                     t = t->sub;
                 }
             }
-        }else if(enable && ArduinoOS_wifi::connected()){ 
-            connected = false;
+        }else if(mqtt_enable && ArduinoOS_wifi::sta_connected()){ 
+            mqtt_connected = false;
             if(ArduinoOS::status == 5) ArduinoOS::status = 2;
-            mqtt->connect(hostname.c_str(),user.c_str(),password.c_str());
+            mqtt->connect(hostname.c_str(),mqtt_user.c_str(),mqtt_password.c_str());
         };
-    };
+    },1000);
+    //LOOP 10ms
+    setInterval([](){
+        if(mqtt_enable) mqtt->loop();
+    },10);
+};
+void ArduinoOS_mqtt::loop(){
+    ArduinoOS_wifi::loop();
 };
 
 //Methods
@@ -61,16 +50,16 @@ bool ArduinoOS_mqtt::config(u8 s){
     if(net)         delete net;
     if(netSecure)   delete netSecure;
     mqtt = new MQTTClient;
-    if(enable){
+    if(mqtt_enable && mqtt_server){
         mqtt->setOptions(60, true, 1000);
         mqtt->onMessageAdvanced(handle);
-        if(tls){
+        if(mqtt_tls){
             netSecure = new WiFiClientSecure;
-            if(!tlsVerify) netSecure->setInsecure();
-            mqtt->begin(server.c_str(),port,*netSecure);
+            if(!mqtt_tlsVerify) netSecure->setInsecure();
+            mqtt->begin(mqtt_server.c_str(),mqtt_port,*netSecure);
         }else{
             net = new WiFiClient;
-            mqtt->begin(server.c_str(),port,*net);
+            mqtt->begin(mqtt_server.c_str(),mqtt_port,*net);
         };
     }
     return true;
@@ -115,77 +104,87 @@ void ArduinoOS_mqtt::handle(MQTTClient *client, char* topic, char* payload, s32 
     };
 };
 
-//Interface
-void ArduinoOS_mqtt::interface_status(char** c,u8 n){
-    ArduinoOS_wifi::interface_status(c,n);
-    o("");o("📡 MQTT:");
-    char* m;
-    switch(mqtt->lastError()){
-        case LWMQTT_SUCCESS:                    m = "LWMQTT_SUCCESS"; break;
-        case LWMQTT_BUFFER_TOO_SHORT:           m = "LWMQTT_BUFFER_TOO_SHORT"; break;
-        case LWMQTT_VARNUM_OVERFLOW:            m = "LWMQTT_VARNUM_OVERFLOW"; break;
-        case LWMQTT_NETWORK_FAILED_CONNECT:     m = "LWMQTT_NETWORK_FAILED_CONNECT"; break;
-        case LWMQTT_NETWORK_TIMEOUT:            m = "LWMQTT_NETWORK_TIMEOUT"; break;
-        case LWMQTT_NETWORK_FAILED_READ:        m = "LWMQTT_NETWORK_FAILED_READ"; break;
-        case LWMQTT_NETWORK_FAILED_WRITE:       m = "LWMQTT_NETWORK_FAILED_WRITE"; break;
-        case LWMQTT_REMAINING_LENGTH_OVERFLOW:  m = "LWMQTT_REMAINING_LENGTH_OVERFLOW"; break;
-        case LWMQTT_REMAINING_LENGTH_MISMATCH:  m = "LWMQTT_REMAINING_LENGTH_MISMATCH"; break;
-        case LWMQTT_MISSING_OR_WRONG_PACKET:    m = "LWMQTT_MISSING_OR_WRONG_PACKET"; break;
-        case LWMQTT_CONNECTION_DENIED:          m = "LWMQTT_CONNECTION_DENIED"; break;
-        case LWMQTT_FAILED_SUBSCRIPTION:        m = "LWMQTT_FAILED_SUBSCRIPTION"; break;
-        case LWMQTT_SUBACK_ARRAY_OVERFLOW:      m = "LWMQTT_SUBACK_ARRAY_OVERFLOW"; break;
-        case LWMQTT_PONG_TIMEOUT:               m = "LWMQTT_PONG_TIMEOUT"; break;
-        default: char* m = "UNKOWN";
-    };
-    char* r;
-    switch(mqtt->returnCode()){
-        case LWMQTT_CONNECTION_ACCEPTED:        r = "LWMQTT_CONNECTION_ACCEPTED"; break;
-        case LWMQTT_UNACCEPTABLE_PROTOCOL:      r = "LWMQTT_UNACCEPTABLE_PROTOCOL"; break;
-        case LWMQTT_IDENTIFIER_REJECTED:        r = "LWMQTT_IDENTIFIER_REJECTED"; break;
-        case LWMQTT_SERVER_UNAVAILABLE:         r = "LWMQTT_SERVER_UNAVAILABLE"; break;
-        case LWMQTT_BAD_USERNAME_OR_PASSWORD:   r = "LWMQTT_BAD_USERNAME_OR_PASSWORD"; break;
-        case LWMQTT_NOT_AUTHORIZED:             r = "LWMQTT_NOT_AUTHORIZED"; break;
-        case LWMQTT_UNKNOWN_RETURN_CODE:        r = "LWMQTT_UNKNOWN_RETURN_CODE"; break;
-        default: char* r = "UNKOWN";
-    };
-    snprintf(OUT,LONG,"%-20s : %s","Connected",mqtt->connected()?"true":"false");o(OUT);
-    snprintf(OUT,LONG,"%-20s : %s","Last Error",m);o(OUT);
-    snprintf(OUT,LONG,"%-20s : %s","Return Code",r);o(OUT);
-    if(netSecure){
-        char s[100];
-        netSecure->getLastSSLError(s,100);
-        snprintf(OUT,LONG,"%-20s : %s","Last SSL Error",s);o(OUT);
-    }
+ArduinoOS_mqtt::ArduinoOS_mqtt():ArduinoOS_wifi(){
+    variableAdd("mqtt/mqtt_enable",    mqtt_enable    ,           "📡 mqtt_enable MQTT");
+    variableAdd("mqtt/mqtt_server",    mqtt_server    ,           "📡 MQTT mqtt_server IP or Name");
+    variableAdd("mqtt/mqtt_port",      mqtt_port      ,           "📡 MQTT mqtt_server Port");
+    variableAdd("mqtt/mqtt_tls",       mqtt_tls       ,           "📡 Use TLS");
+    variableAdd("mqtt/mqtt_tlsVerify", mqtt_tlsVerify ,           "📡 Verify TLS Certificates");
+    variableAdd("mqtt/mqtt_user",      mqtt_user      ,           "📡 Username");
+    variableAdd("mqtt/mqtt_password",  mqtt_password  ,           "📡 Password");
+
+    commandAdd("mqttStatus",          [](char** param,u8 parCnt){
+        o("");o("📡 MQTT:");
+        char* m;
+        switch(mqtt->lastError()){
+            case LWMQTT_SUCCESS:                    m = "LWMQTT_SUCCESS"; break;
+            case LWMQTT_BUFFER_TOO_SHORT:           m = "LWMQTT_BUFFER_TOO_SHORT"; break;
+            case LWMQTT_VARNUM_OVERFLOW:            m = "LWMQTT_VARNUM_OVERFLOW"; break;
+            case LWMQTT_NETWORK_FAILED_CONNECT:     m = "LWMQTT_NETWORK_FAILED_CONNECT"; break;
+            case LWMQTT_NETWORK_TIMEOUT:            m = "LWMQTT_NETWORK_TIMEOUT"; break;
+            case LWMQTT_NETWORK_FAILED_READ:        m = "LWMQTT_NETWORK_FAILED_READ"; break;
+            case LWMQTT_NETWORK_FAILED_WRITE:       m = "LWMQTT_NETWORK_FAILED_WRITE"; break;
+            case LWMQTT_REMAINING_LENGTH_OVERFLOW:  m = "LWMQTT_REMAINING_LENGTH_OVERFLOW"; break;
+            case LWMQTT_REMAINING_LENGTH_MISMATCH:  m = "LWMQTT_REMAINING_LENGTH_MISMATCH"; break;
+            case LWMQTT_MISSING_OR_WRONG_PACKET:    m = "LWMQTT_MISSING_OR_WRONG_PACKET"; break;
+            case LWMQTT_CONNECTION_DENIED:          m = "LWMQTT_CONNECTION_DENIED"; break;
+            case LWMQTT_FAILED_SUBSCRIPTION:        m = "LWMQTT_FAILED_SUBSCRIPTION"; break;
+            case LWMQTT_SUBACK_ARRAY_OVERFLOW:      m = "LWMQTT_SUBACK_ARRAY_OVERFLOW"; break;
+            case LWMQTT_PONG_TIMEOUT:               m = "LWMQTT_PONG_TIMEOUT"; break;
+            default: char* m = "UNKOWN";
+        };
+        char* r;
+        switch(mqtt->returnCode()){
+            case LWMQTT_CONNECTION_ACCEPTED:        r = "LWMQTT_CONNECTION_ACCEPTED"; break;
+            case LWMQTT_UNACCEPTABLE_PROTOCOL:      r = "LWMQTT_UNACCEPTABLE_PROTOCOL"; break;
+            case LWMQTT_IDENTIFIER_REJECTED:        r = "LWMQTT_IDENTIFIER_REJECTED"; break;
+            case LWMQTT_SERVER_UNAVAILABLE:         r = "LWMQTT_SERVER_UNAVAILABLE"; break;
+            case LWMQTT_BAD_USERNAME_OR_PASSWORD:   r = "LWMQTT_BAD_USERNAME_OR_PASSWORD"; break;
+            case LWMQTT_NOT_AUTHORIZED:             r = "LWMQTT_NOT_AUTHORIZED"; break;
+            case LWMQTT_UNKNOWN_RETURN_CODE:        r = "LWMQTT_UNKNOWN_RETURN_CODE"; break;
+            default: char* r = "UNKOWN";
+        };
+        snprintf(OUT,LONG,"%-20s : %s","mqtt_connected",mqtt->connected()?"true":"false");o(OUT);
+        snprintf(OUT,LONG,"%-20s : %s","Last Error",m);o(OUT);
+        snprintf(OUT,LONG,"%-20s : %s","Return Code",r);o(OUT);
+        if(netSecure){
+            char s[100];
+            netSecure->getLastSSLError(s,100);
+            snprintf(OUT,LONG,"%-20s : %s","Last SSL Error",s);o(OUT);
+        }
+    },"📡 Shows System / Wifi / MQTT status",false);
+
+    commandAdd("mqttConnect",[](char** param,u8 parCnt){
+        if(parCnt>=2){
+                snprintf(OUT,LONG,"Set  mqtt/enabled: %s","true");o(OUT);
+                mqtt_enable  = true;
+                snprintf(OUT,LONG,"Set  mqtt/mqtt_server: %s",param[1]);o(OUT);
+                variableSet("mqtt/mqtt_server",param[1]);
+        };
+        if(parCnt>=3){
+                snprintf(OUT,LONG,"Set mqtt/mqtt_port: %s",param[2]);o(OUT);
+                variableSet("mqtt/mqtt_port",param[2]);
+        };
+        if(parCnt>=4){
+                snprintf(OUT,LONG,"Set mqtt/mqtt_user: %s",param[2]);o(OUT);
+                variableSet("mqtt/mqtt_user",param[3]);
+        };
+        if(parCnt>=5){
+                snprintf(OUT,LONG,"Set mqtt/mqtt_password: %s",param[2]);o(OUT);
+                variableSet("mqtt/mqtt_password",param[4]);
+        };
+        variableLoad(true);
+        o("DONE! ✅ > Type 'mqttStatus' to check status");
+        config(1);
+    }, "📡 [mqtt_server] [mqtt_port] [mqtt_user] [mqtt_password] | Apply mqtt settings and connect to configured mqtt_server",false);
+
+    commandAdd("mqttPublish",[](char** param,u8 parCnt){
+        if(parCnt>=3){
+            mqtt->publish(param[1],param[2]);
+            o("📨 sent!");
+        };
+    },    "📡 [topic] [message] | publish a message to topic",false);
+
 };
 
-void ArduinoOS_mqtt::interface_connect(char** c,u8 n){
-    if(n>=2){
-            snprintf(OUT,LONG,"Set  mqtt/enabled: %s","true");o(OUT);
-            enable  = true;
-            snprintf(OUT,LONG,"Set  mqtt/server: %s",c[1]);o(OUT);
-            variableSet("mqtt/server",c[1]);
-    };
-    if(n>=3){
-            snprintf(OUT,LONG,"Set mqtt/port: %s",c[2]);o(OUT);
-            variableSet("mqtt/port",c[2]);
-    };
-    if(n>=4){
-            snprintf(OUT,LONG,"Set mqtt/user: %s",c[2]);o(OUT);
-            variableSet("mqtt/user",c[3]);
-    };
-    if(n>=5){
-            snprintf(OUT,LONG,"Set mqtt/password: %s",c[2]);o(OUT);
-            variableSet("mqtt/password",c[4]);
-    };
-    variableLoad(true);
-    o("DONE! ✅ > Type 'status' to check status");
-    config(1);
-};
-
-void ArduinoOS_mqtt::interface_publish(char** c,u8 n){
-    if(n>=3){
-        mqtt->publish(c[1],c[2]);
-        o("📨 sent!");
-    };
-};
 #endif
