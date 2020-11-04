@@ -5,69 +5,107 @@
 **Features:**
 * UNIX style serial terminal
 * EEPROM support for saving parameters
-* Enables access to application-parameter
-* Enables access to application-functions
-* Int, Double and String datatypes supported for parameter
+* Enables access to application-parameter and application-functions
 * Robust design with no Heap-Fragmentation
-* Small footprint (<770 Bytes of SRAM)
+* Integrated Eventmanager + Timer
+* Wifi + Telnet + Mqtt + OTA Features (ESP8266 only)
+* Small AVR footprint (<770 Bytes of SRAM)
 
-**Terminal:**
+**Serial CLI: (Baud 9600 on AVR | 112500 on ESP8266)**
 ```
-ArduinOS V1.0
+arduinoOS:/>help
 Commands:
-                demo : demo [parm1] [parm2] - ..comment.. 
-                gpio : gpio [write|read] [#] [0|1]
-                 get : get [parameter]
-                 set : set [parameter] [value]
-               stats : 
-              reboot : 
-               reset : 
+gpio                 🖥  gpio [pin] [0|1]
+get                  🖥  get [filter]
+set                  🖥  set [par] [val]
+lock                 🖥
+reboot               🖥
+reset                🖥
+status               🖥
+wifiStatus           📶 Shows System / Wifi status
+wifiFirmware         📶 [url] | load and install new firmware from URL (http or https)
+wifiScan             📶 Scans for nearby networks
+wifiConnect          📶 [network] [password] | apply network settings and connect to configured network
+wifiDns              📶 [ip] | check internet connection
+mqttStatus           📡 Shows System / Wifi / MQTT status
+mqttConnect          📡 [mqtt_server] [mqtt_port] [mqtt_user] [mqtt_password] | Apply and configured
+mqttPublish          📡 [topic] [message] | publish a message to topic
 arduinoOS:/>get
 Variables:
-            sys/name :    arduinoOS		 
-            demo/int :         1234		 
-         demo/double :      1234.12		 
-         demo/string :         DEMO		..comment.. 
-arduinoOS:/>|
+sys/hostname         : arduinoOS                 
+sys/password         : aos                       
+wifi/enable          : false                    📶 Enable WiFi STA-Mode 
+wifi/network         :                          📶 Network SSID 
+wifi/password        :                          📶 Network Password 
+wifi/ip              : 0.0.0.0                  📶 IP (leave blank to use DHCP) 
+wifi/subnet          : 0.0.0.0                  📶 Subnet 
+wifi/gateway         : 0.0.0.0                  📶 Gateway 
+wifi/dns             : 0.0.0.0                  📶 DNS 
+hotspot/enable       : false                    📶 Enable WiFi Hotspot-Mode 
+hotspot/password     :                          📶 Hotspot Password 
+telnet/enable        : true                     📶 Enable Telnet support on Port 23 (require reboot) 
+ntp/enable           : false                    ⏱  Enable NTP Sync 
+ntp/server           :                          ⏱  NTP Server adress 
+ntp/offset           : 0                        ⏱  NTP Time offset 
+mqtt/mqtt_enable     : false                    📡 mqtt_enable MQTT 
+mqtt/mqtt_server     :                          📡 MQTT mqtt_server IP or Name 
+mqtt/mqtt_port       : 1883                     📡 MQTT mqtt_server Port 
+mqtt/mqtt_tls        : false                    📡 Use TLS 
+mqtt/mqtt_tlsVerify  : false                    📡 Verify TLS Certificates 
+mqtt/mqtt_user       :                          📡 Username 
+mqtt/mqtt_password   :                          📡 Password 
+demo/bool            : true                      
+demo/int             : 1234                      
+demo/double          : 1234.12                   
+demo/string          : DEMO                     ..comment.. 
+arduinoOS:/>
 ```
-| Command | Parameters | Description | Hidden |
-| - | - | - | - |
-| help | - | show aviable commands | yes |
-| get | [parameter] | get a parameter (leave empty to list all parameter)| no |
-| set | [parameter] [value] | set a parameter | no |
-| load | - | load parameter from EEPROM (will automatically done on system start) | yes |
-| save | - | save parameter to EEPROM (will automatically done on *get*) | yes |
-| gpio | [gpio] [read/write] [0/1] | read or write GPIO | no |
-| stats | - | show system information | no |
-| clear | - | clear terminal | yes |
-| reboot | - | reboot system | no |
-| reset | - | reset EEPROM to default values and reboot | no |
-
-* Reboot ist done by triggering WDT (default configured to 4 seconds)
 * EEPROM will automatically reset after sketch upload
 
 <br/><br/>
 <img src="img/memory.png" width="25" align="right"/>
-**Add a parameter**
+**Parameter**
 ```cpp
-aos.addVariable("demo/int",  myInt, "My confg int", false, false);
+    static bool             commandAdd(char* name,void (*)(char**, u8) callbackFunction,char* description,bool hidden);
+    static bool             commandCall(char* name,char** param, u8 paramCnt);
 ```
-* **Name**: Name of the parameter. Allowed data types: *char[]*.
-* **Variable**: Allowed data types: *int*.
-* **Description**: Desciption of your Parameter. Allowed data types: *char[]*.
-* **Hidden**: Hide parameter in list. Allowed data types: *bool*.
-* **Protected**: Don't allow to change the parameter. Allowed data types: *bool*.
 
 <br/><br/>
-**Add a command**
+**Commands**
 <img src="img/commands.png" width="25" align="right"/>
 ```cpp
-aos.addCommand("demo",myFunction,"demo [parm1] [parm2] - My Function",false);
+        static bool             variableAdd(char* name,bool&    variableRef,  char* description,bool hidden, bool protected);
+        static bool             variableAdd(char* name,int&     variableRef,  char* description,bool hidden, bool protected);
+        static bool             variableAdd(char* name,double&  variableRef,  char* description,bool hidden, bool protected);
+        static bool             variableAdd(char* name,String&  variableRef,  char* description,bool hidden, bool protected);
 ```
-* **Name**: Name of the function. Allowed data types: *char[]*.
-* **Function**: Allowed data types: void(*)(char**,uint8_t).
-* **Description**: Desciption of your Function. Allowed data types: *char[]*.
-* **Hidden**: Hide function in list. Allowed data types: *bool*.
+
+<br/><br/>
+**Events**
+<img src="img/commands.png" width="25" align="right"/>
+```cpp
+        static void             eventListen(char* name,void(*)(void*) callbackFunction);
+        static void             eventEmit(char* name,void* parameter,bool callImmediately);
+```
+
+<br/><br/>
+**Tasks / Timeouts**
+<img src="img/commands.png" width="25" align="right"/>
+```cpp
+        static u16              setInterval(void(*)() callbackFunction,u16 ms);
+        static u16              setTimeout(void(*)() callbackFunction, u16 ms);
+        static AOS_TASK*        unsetInterval(u16 id);
+```
+
+<br/><br/>
+**ESP8266: MQTT**
+<img src="img/commands.png" width="25" align="right"/>
+```cpp
+        static void publish(char* topic, char* payload, bool retain, u8 qos);
+        static void publish(String& topic, String& payload, bool retain, u8 qos);
+        static void subscripe(char* topic,u8,void (*function)(char*,char*) callbackFunction);
+        static void unsubscripe(char* topic);
+```
 
 <br/><br/>
 **Begin**
@@ -79,10 +117,10 @@ aos.begin(Serial);
 * NOTICE: Your command-function have to take these parameters: void(char** param,uint8_t parCnt){};
 
 <br/><br/>
-**Example sketch:**
+**AVR Example sketch:**
 ```cpp
 #include <arduinoOS.h>
-ArduinoOS aos;
+ArduinoOS aos
 
 bool    demoBool{true};
 int     demoInt{1234};

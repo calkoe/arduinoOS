@@ -42,7 +42,7 @@ void ArduinoOS_wifi::begin(){
     //LOOP 10ms
     setInterval([](){
         if(telnet_enable) telnetLoop();
-    },10);
+    },11);
 };
 void ArduinoOS_wifi::loop(){
     ArduinoOS::loop();

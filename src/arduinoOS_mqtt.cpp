@@ -38,7 +38,7 @@ void ArduinoOS_mqtt::begin(){
     //LOOP 10ms
     setInterval([](){
         if(mqtt_enable) mqtt->loop();
-    },10);
+    },12);
 };
 void ArduinoOS_mqtt::loop(){
     ArduinoOS_wifi::loop();
@@ -51,7 +51,7 @@ bool ArduinoOS_mqtt::config(u8 s){
     if(netSecure)   delete netSecure;
     mqtt = new MQTTClient;
     if(mqtt_enable && mqtt_server){
-        mqtt->setOptions(60, true, 1000);
+        mqtt->setOptions(60, true, 500);
         mqtt->onMessageAdvanced(handle);
         if(mqtt_tls){
             netSecure = new WiFiClientSecure;
