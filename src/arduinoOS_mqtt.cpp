@@ -19,9 +19,10 @@ void ArduinoOS_mqtt::begin(){
     config(0);
     //1S Connection Management
     setInterval([](){
-        if(mqtt_enable && mqtt_server && mqtt->connected()){
-            if(ArduinoOS::status == 2) ArduinoOS::status = 5;
-            if(!mqtt_connected){
+        if(mqtt_enable && ArduinoOS::status == 2 &&  mqtt->connected()) ArduinoOS::status = 5; 
+        if(mqtt_enable && ArduinoOS::status == 5 && !mqtt->connected()) ArduinoOS::status = 2; 
+        if(mqtt_enable && mqtt_server){
+            if(mqtt->connected() && !mqtt_connected){
                 mqtt_connected = true;
                 SUB* t = sub;
                 while(t){
@@ -29,11 +30,11 @@ void ArduinoOS_mqtt::begin(){
                     t = t->sub;
                 }
             }
-        }else if(mqtt_enable && ArduinoOS_wifi::sta_connected()){ 
-            mqtt_connected = false;
-            if(ArduinoOS::status == 5) ArduinoOS::status = 2;
-            mqtt->connect(hostname.c_str(),mqtt_user.c_str(),mqtt_password.c_str());
-        };
+            if(!mqtt->connected() && ArduinoOS_wifi::sta_connected()){ 
+                mqtt_connected = false;
+                mqtt->connect(hostname.c_str(),mqtt_user.c_str(),mqtt_password.c_str());
+            };
+        }
     },1000);
     //LOOP 10ms
     setInterval([](){

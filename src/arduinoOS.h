@@ -17,6 +17,7 @@
     #define LONG                128     //BufferIn, BufferOut, TerminalHistory
     #define SERSPEED            115200 
     #define STATUSLED           16
+    #define RESETBUTTON         0
     #define EEPROM_SIZE         1024    //Only for ESP
 #else
     #include <avr/wdt.h>
@@ -24,6 +25,7 @@
     #define LONG                64      //IO Buffer
     #define SERSPEED            9600 
     #define STATUSLED           LED_BUILTIN
+    #define RESETBUTTON         0
 #endif
 
 
@@ -117,6 +119,7 @@ class ArduinoOS{
         static u32              serialBaud;
         static u8               status;
         static u8               statusLed;
+        static u8               resetButton;
         static bool             watchdogEnable;
         static bool             autoLoad;
         static bool             autoReset;

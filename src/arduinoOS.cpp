@@ -20,6 +20,7 @@ bool                    ArduinoOS::autoLoad{true};
 bool                    ArduinoOS::autoReset{true};
 bool                    ArduinoOS::locked{false};
 u8                      ArduinoOS::statusLed{STATUSLED};
+u8                      ArduinoOS::resetButton{RESETBUTTON};
 String                  ArduinoOS::date{__DATE__ " " __TIME__};
 String                  ArduinoOS::date_temp{date};
 String                  ArduinoOS::hostname{"arduinoOS"};
@@ -30,7 +31,7 @@ void ArduinoOS::begin(){
     //Status LED
     if(statusLed){
         setInterval([](){
-            if(!status)          digitalWrite(statusLed,1);
+            if(!status)          digitalWrite(statusLed,!digitalRead(statusLed));
             else if(status==5)   digitalWrite(statusLed,0);
             else{
                 static bool o{1};
@@ -38,7 +39,7 @@ void ArduinoOS::begin(){
                 if(p<2*status) digitalWrite(statusLed,o=!o);
                 if(p==10){p=0;o=1;}else p++;
             }
-        },200);
+        },180);
     };
     //LOOP 10ms
     setInterval([](){
@@ -57,7 +58,8 @@ void ArduinoOS::begin(){
     #if defined ESP8266 || defined ESP32 
         EEPROM.begin(EEPROM_SIZE);
     #endif
-    if(statusLed) pinMode(statusLed,OUTPUT);
+    if(statusLed)   pinMode(statusLed,OUTPUT);
+    if(resetButton) pinMode(resetButton,INPUT_PULLUP);
     if(autoLoad)  variableLoad();
     o(0x07,false);
     p(textEscClear);
