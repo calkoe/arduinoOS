@@ -66,51 +66,60 @@ arduinoOS:/>
 <img src="img/memory.png" width="25" align="right"/>
 **Parameter**
 ```cpp
-    static bool             commandAdd(char* name,void (*)(char**, u8) callbackFunction,char* description,bool hidden);
-    static bool             commandCall(char* name,char** param, u8 paramCnt);
+static bool commandAdd(char* name,void (*)(char**, u8) callbackFunction,char* description,bool hidden);
+static bool commandCall(char* name,char** param, u8 paramCnt);
 ```
 
 <br/><br/>
 **Commands**
 <img src="img/commands.png" width="25" align="right"/>
 ```cpp
-        static bool             variableAdd(char* name,bool&    variableRef,  char* description,bool hidden, bool protected);
-        static bool             variableAdd(char* name,int&     variableRef,  char* description,bool hidden, bool protected);
-        static bool             variableAdd(char* name,double&  variableRef,  char* description,bool hidden, bool protected);
-        static bool             variableAdd(char* name,String&  variableRef,  char* description,bool hidden, bool protected);
+static bool variableAdd(char* name,bool&    variableRef,  char* description,bool hidden, bool protected);
+static bool variableAdd(char* name,int&     variableRef,  char* description,bool hidden, bool protected);
+static bool variableAdd(char* name,double&  variableRef,  char* description,bool hidden, bool protected);
+static bool variableAdd(char* name,String&  variableRef,  char* description,bool hidden, bool protected);
 ```
 
 <br/><br/>
 **Events**
 <img src="img/commands.png" width="25" align="right"/>
 ```cpp
-        static void             eventListen(char* name,void(*)(void*) callbackFunction);
-        static void             eventEmit(char* name,void* parameter,bool callImmediately);
+static void eventListen(char* name,void(*)(void*) callbackFunction);
+static void eventEmit(char* name,void* parameter,bool callImmediately);
 ```
 
 <br/><br/>
 **Tasks / Timeouts**
 <img src="img/commands.png" width="25" align="right"/>
 ```cpp
-        static u16              setInterval(void(*)() callbackFunction,u16 ms);
-        static u16              setTimeout(void(*)() callbackFunction, u16 ms);
-        static AOS_TASK*        unsetInterval(u16 id);
+static u16  setInterval(void(*)() callbackFunction,u16 ms);
+static u16  setTimeout(void(*)() callbackFunction, u16 ms);
+static AOS_ unsetInterval(u16 id);
 ```
 
 <br/><br/>
 **ESP8266: MQTT**
 <img src="img/commands.png" width="25" align="right"/>
 ```cpp
-        static void publish(char* topic, char* payload, bool retain, u8 qos);
-        static void publish(String& topic, String& payload, bool retain, u8 qos);
-        static void subscripe(char* topic,u8,void (*function)(char*,char*) callbackFunction);
-        static void unsubscripe(char* topic);
+static void publish(char* topic, char* payload, bool retain, u8 qos);
+static void publish(String& topic, String& payload, bool retain, u8 qos);
+static void subscripe(char* topic,u8,void (*function)(char*,char*) callbackFunction);
+static void unsubscripe(char* topic);
 ```
 
 <br/><br/>
-**Begin**
+**QuickStart**
 ```cpp
-aos.begin(Serial);
+#include <arduinoOS.h>
+ArduinoOS aos;
+
+setup(){
+    aos.begin(Serial);
+}
+
+loop(){
+    aos.loop();
+}
 ```
 * **Serial**: Reference to serial interface to start the Terminal. Allowed data types: *HardwareSerial*.
 * NOTICE: You have to add all your parameter before calling *aos.begin(Serial)* to make the EEPROM layout clear to the system. 
@@ -159,6 +168,34 @@ void loop()
     aos.loop();
 }
 ```
+
+<br/><br/>
+**ESP8266 MQTT Example sketch:**
+```cpp
+#include <arduinoOS_mqtt.h>
+#include <ArduinoJson.h>
+
+ArduinoOS_mqtt aos;
+StaticJsonDocument<200> doc;
+
+void handle(char* topic,char* payload){
+    aos.o(topic);
+    aos.o(payload);
+};
+
+void setup()
+{
+    aos.begin();
+    aos.subscripe("demo",2,handle);
+    aos.unsubscripe("demo");
+}
+
+void loop()
+{ 
+    aos.loop();
+}
+```
+
 <br/><br/>
 **Roadmap:**
 <img src="img/plugins.png" width="25" align="right"/>
