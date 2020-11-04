@@ -83,7 +83,7 @@ bool ArduinoOS_wifi::config(u8 s){
         timeClient.begin();
     }
 
-    if(sta_enable && sta_network && sta_connected()){
+    if(sta_enable && sta_network){
         if(sta_ip && sta_subnet && sta_gateway && sta_dns){
             IPAddress wifiIp;
             IPAddress wifiDns;
