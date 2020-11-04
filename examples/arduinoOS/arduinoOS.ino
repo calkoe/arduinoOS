@@ -1,5 +1,5 @@
 #include <arduinoOS.h>
-ArduinoOS aos
+ArduinoOS aos;
 
 bool    demoBool{true};
 int     demoInt{1234};
