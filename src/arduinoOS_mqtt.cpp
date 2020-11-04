@@ -115,7 +115,7 @@ ArduinoOS_mqtt::ArduinoOS_mqtt():ArduinoOS_wifi(){
 
     commandAdd("mqttStatus",          [](char** param,u8 parCnt){
         o("");o("📡 MQTT:");
-        char* m;
+        const char* m{NULL};
         switch(mqtt->lastError()){
             case LWMQTT_SUCCESS:                    m = "LWMQTT_SUCCESS"; break;
             case LWMQTT_BUFFER_TOO_SHORT:           m = "LWMQTT_BUFFER_TOO_SHORT"; break;
@@ -131,9 +131,9 @@ ArduinoOS_mqtt::ArduinoOS_mqtt():ArduinoOS_wifi(){
             case LWMQTT_FAILED_SUBSCRIPTION:        m = "LWMQTT_FAILED_SUBSCRIPTION"; break;
             case LWMQTT_SUBACK_ARRAY_OVERFLOW:      m = "LWMQTT_SUBACK_ARRAY_OVERFLOW"; break;
             case LWMQTT_PONG_TIMEOUT:               m = "LWMQTT_PONG_TIMEOUT"; break;
-            default: char* m = "UNKOWN";
+            default: m = "UNKOWN";
         };
-        char* r;
+        const char* r{NULL};
         switch(mqtt->returnCode()){
             case LWMQTT_CONNECTION_ACCEPTED:        r = "LWMQTT_CONNECTION_ACCEPTED"; break;
             case LWMQTT_UNACCEPTABLE_PROTOCOL:      r = "LWMQTT_UNACCEPTABLE_PROTOCOL"; break;
@@ -142,7 +142,7 @@ ArduinoOS_mqtt::ArduinoOS_mqtt():ArduinoOS_wifi(){
             case LWMQTT_BAD_USERNAME_OR_PASSWORD:   r = "LWMQTT_BAD_USERNAME_OR_PASSWORD"; break;
             case LWMQTT_NOT_AUTHORIZED:             r = "LWMQTT_NOT_AUTHORIZED"; break;
             case LWMQTT_UNKNOWN_RETURN_CODE:        r = "LWMQTT_UNKNOWN_RETURN_CODE"; break;
-            default: char* r = "UNKOWN";
+            default: r = "UNKOWN";
         };
         snprintf(OUT,LONG,"%-20s : %s","mqtt_connected",mqtt->connected()?"true":"false");o(OUT);
         snprintf(OUT,LONG,"%-20s : %s","Last Error",m);o(OUT);

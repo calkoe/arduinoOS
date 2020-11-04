@@ -83,7 +83,7 @@ bool ArduinoOS_wifi::config(u8 s){
         timeClient.begin();
     }
 
-    if(sta_enable && sta_network && sta_connected){
+    if(sta_enable && sta_network && sta_connected()){
         if(sta_ip && sta_subnet && sta_gateway && sta_dns){
             IPAddress wifiIp;
             IPAddress wifiDns;
@@ -167,7 +167,7 @@ ArduinoOS_wifi::ArduinoOS_wifi():ArduinoOS(){
 
     commandAdd("wifiStatus",[](char** param,u8 parCnt){
         o("");o("📶 Newtwork:");
-        char* s;
+        const char* s;
         switch(WiFi.status()){
             case WL_CONNECTED:      s = "WL_CONNECTED";break;
             case WL_NO_SHIELD:      s = "WL_NO_SHIELD";break;
@@ -179,7 +179,7 @@ ArduinoOS_wifi::ArduinoOS_wifi():ArduinoOS(){
             case WL_DISCONNECTED:   s = "WL_DISCONNECTED";break;
             default: s = "UNKOWN";
         };
-        char* m;
+        const char* m;
         switch(WiFi.getMode()){
             case WIFI_AP:           m = "WIFI_AP";break;
             case WIFI_STA:          m = "WIFI_STA";break;
@@ -244,7 +244,7 @@ ArduinoOS_wifi::ArduinoOS_wifi():ArduinoOS(){
         u8 n = WiFi.scanNetworks();
         if(n){
             for (u8 i = 0; i < n; i++){
-                char* e;
+                const char* e;
                 switch(WiFi.encryptionType(i)){
                     case AUTH_OPEN:         e = "AUTH_OPEN";break;
                     case AUTH_WEP:          e = "AUTH_WEP";break;

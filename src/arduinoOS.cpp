@@ -113,7 +113,7 @@ u16 ArduinoOS::setTimeout(void(*f)(),u16 i, bool repeat){
  * @param idDel IntervalID
 */
 ArduinoOS::AOS_TASK* ArduinoOS::unsetInterval(u16 idDel){
-    if(!aos_task) return false;
+    if(!aos_task) return nullptr;
     if(aos_task->id == idDel){
         AOS_TASK* d{aos_task}; 
         aos_task = aos_task->aos_task;
@@ -138,7 +138,6 @@ ArduinoOS::AOS_TASK* ArduinoOS::unsetInterval(u16 idDel){
 */
 void ArduinoOS::taskLoop(){
     AOS_TASK* i{aos_task};
-    u16 id{0};
     while(i){
         if(i->interval && (unsigned long)(millis()-i->timestamp)>=i->interval){
             //o("Abweichung: " + (String)(unsigned long)(ms-i->timestamp));
@@ -155,7 +154,7 @@ void ArduinoOS::taskLoop(){
  * @param name Event name
  * @param function void (*function)(void*)
 */
-void ArduinoOS::eventListen(char* name,void (*function)(void*)){
+void ArduinoOS::eventListen(const char* name,void (*function)(void*)){
     AOS_EVT* e = new AOS_EVT{name,function,false,nullptr,nullptr};
     if(aos_evt == nullptr){
         aos_evt = e;
@@ -173,7 +172,7 @@ void ArduinoOS::eventListen(char* name,void (*function)(void*)){
  * @param value Pass Value to listener
  * @param now Call Listener immediately or on next loop
 */
-void ArduinoOS::eventEmit(char* name,void* value,bool now){
+void ArduinoOS::eventEmit(const char* name,void* value,bool now){
     AOS_EVT* i{aos_evt};
     while(i != nullptr){
         if(!strcmp(i->name,name)){
@@ -212,7 +211,7 @@ void ArduinoOS::eventLoop(){
  * @param hidden Hide Command in CLI
  * @return bool true if Command added successfully
 */
-bool ArduinoOS::commandAdd(char* name,void (*function)(char** param, u8 parCnt),char* description,bool hidden){
+bool ArduinoOS::commandAdd(const char* name,void (*function)(char** param, u8 parCnt),const char* description,bool hidden){
     AOS_CMD* b = new AOS_CMD{name,function,description,hidden,nullptr};
     if(aos_cmd == nullptr){
         aos_cmd = b;
@@ -238,11 +237,11 @@ bool ArduinoOS::commandAdd(char* name,void (*function)(char** param, u8 parCnt),
  * 
  * @param filter Filter on Command name
 */
-void ArduinoOS::commandList(char* filter){
+void ArduinoOS::commandList(const char* filter){
     p(textCommands);
     AOS_CMD* i{aos_cmd};
     while(i != nullptr){
-        if(!i->hidden && (filter=="" || strstr(i->name, filter))){
+        if(!i->hidden && (!filter || strstr(i->name, filter))){
             snprintf(OUT,LONG, "%-20s %s",i->name,i->description);o(OUT);
         }
         i = i->aos_cmd;
@@ -254,7 +253,7 @@ void ArduinoOS::commandList(char* filter){
  * 
  * @param filter Filter by Command name
 */
-void ArduinoOS::commandMan(char* name){
+void ArduinoOS::commandMan(const char* name){
     AOS_CMD* i{aos_cmd};
     while(i != nullptr){
         if(!strcmp(i->name,name)){
@@ -273,7 +272,7 @@ void ArduinoOS::commandMan(char* name){
  * @param param Parameter
  * @param paramCnt Parameter count
 */
-bool ArduinoOS::commandCall(char* name,char** param, u8 parCnt){
+bool ArduinoOS::commandCall(const char* name,char** param, u8 parCnt){
     AOS_CMD* i{aos_cmd};
     while(i != nullptr){
         if(!strncmp(i->name,name,SHORT)){
@@ -286,11 +285,11 @@ bool ArduinoOS::commandCall(char* name,char** param, u8 parCnt){
 }
 
 //Variables
-bool ArduinoOS::variableAdd(char* n,bool& v,char* d,bool h,bool p)  {return _variableAdd(n,&v,d,h,p,AOS_DT_BOOL);};
-bool ArduinoOS::variableAdd(char* n,int& v,char* d,bool h,bool p)   {return _variableAdd(n,&v,d,h,p,AOS_DT_INT);};
-bool ArduinoOS::variableAdd(char* n,double& v,char* d,bool h,bool p){return _variableAdd(n,&v,d,h,p,AOS_DT_DOUBLE);};
-bool ArduinoOS::variableAdd(char* n,String& v,char* d,bool h,bool p){return _variableAdd(n,&v,d,h,p,AOS_DT_STRING);};
-bool ArduinoOS::_variableAdd(char* name,void* value,char* description,bool hidden,bool protect,AOS_DT aos_dt){
+bool ArduinoOS::variableAdd(const char* n,bool& v,const char* d,bool h,bool p)  {return _variableAdd(n,&v,d,h,p,AOS_DT_BOOL);};
+bool ArduinoOS::variableAdd(const char* n,int& v,const char* d,bool h,bool p)   {return _variableAdd(n,&v,d,h,p,AOS_DT_INT);};
+bool ArduinoOS::variableAdd(const char* n,double& v,const char* d,bool h,bool p){return _variableAdd(n,&v,d,h,p,AOS_DT_DOUBLE);};
+bool ArduinoOS::variableAdd(const char* n,String& v,const char* d,bool h,bool p){return _variableAdd(n,&v,d,h,p,AOS_DT_STRING);};
+bool ArduinoOS::_variableAdd(const char* name,void* value,const char* description,bool hidden,bool protect,AOS_DT aos_dt){
     if(isBegin){
         p(textErrorBegin);
         return false;
@@ -316,21 +315,21 @@ bool ArduinoOS::_variableAdd(char* name,void* value,char* description,bool hidde
     } 
     return false;
 };
-void ArduinoOS::variableList(char* filter){
+void ArduinoOS::variableList(const char* filter){
     p(textVariables);
     AOS_VAR* i{aos_var};
     while(i != nullptr){
-        if(!i->hidden && (filter=="" || strstr(i->name, filter))){ 
-            if(i->aos_dt==AOS_DT_BOOL)   snprintf(OUT,LONG,"%-20s : %-20s\t%s %s", i->name,*(bool*)(i->value) ? "true" : "false",i->description,(i->protect ? "(Protected)":""));
-            if(i->aos_dt==AOS_DT_INT)    snprintf(OUT,LONG,"%-20s : %-20d\t%s %s", i->name,*(int*)(i->value),i->description,(i->protect ? "(Protected)":""));
-            if(i->aos_dt==AOS_DT_DOUBLE) {char str_temp[SHORT];dtostrf(*(double*)(i->value), 4, 2, str_temp);snprintf(OUT,LONG,"%-20s : %-20s\t%s %s", i->name,str_temp,i->description,(i->protect ? "(Protected)":""));};
-            if(i->aos_dt==AOS_DT_STRING) snprintf(OUT,LONG,"%-20s : %-20s\t%s %s", i->name,(*(String*)(i->value)).c_str(),i->description,(i->protect ? "(Protected)":""));
+        if(!i->hidden && (!filter || strstr(i->name, filter))){ 
+            if(i->aos_dt==AOS_DT_BOOL)   snprintf(OUT,LONG,"%-20s : %-20s\t%s %s", i->name,*(bool*)(i->value) ? "true" : "false",i->description,(i->protect ? "(Protected)":NULL));
+            if(i->aos_dt==AOS_DT_INT)    snprintf(OUT,LONG,"%-20s : %-20d\t%s %s", i->name,*(int*)(i->value),i->description,(i->protect ? "(Protected)":NULL));
+            if(i->aos_dt==AOS_DT_DOUBLE) {char str_temp[SHORT];dtostrf(*(double*)(i->value), 4, 2, str_temp);snprintf(OUT,LONG,"%-20s : %-20s\t%s %s", i->name,str_temp,i->description,(i->protect ? "(Protected)":NULL));};
+            if(i->aos_dt==AOS_DT_STRING) snprintf(OUT,LONG,"%-20s : %-20s\t%s %s", i->name,(*(String*)(i->value)).c_str(),i->description,(i->protect ? "(Protected)":NULL));
             o(OUT);
         }
         i = i->aos_var;
     };
 }
-bool ArduinoOS::variableSet(char* name,char* value){
+bool ArduinoOS::variableSet(const char* name,char* value){
     AOS_VAR* i{aos_var};
     while(i != nullptr){
         if(!strcmp(i->name,name)){
@@ -345,7 +344,7 @@ bool ArduinoOS::variableSet(char* name,char* value){
     };
     return false;
 };
-void* ArduinoOS::variableGet(char* name){
+void* ArduinoOS::variableGet(const char* name){
     AOS_VAR* i{aos_var};
     while(i != nullptr){
         if(!strcmp(i->name,name)) return i->value;
@@ -387,7 +386,7 @@ void ArduinoOS::variableLoad(bool save){
                     }
                 }
             }
-            if((date != date_temp && autoReset || date == "!") && !save){
+            if(((date != date_temp && autoReset) || date == "!") && !save){
                 o("RESET");date=date_temp;
                 variableLoad(true);return;
             }
@@ -530,9 +529,9 @@ int ArduinoOS::freeMemory() {
 #endif
 
 ArduinoOS::ArduinoOS(){
-    variableAdd("sys/date",     date,"",true,true);
-    variableAdd("sys/hostname", hostname,"");
-    variableAdd("sys/password", password,"");
+    variableAdd("sys/date",     date,NULL,true,true);
+    variableAdd("sys/hostname", hostname,NULL);
+    variableAdd("sys/password", password,NULL);
 
     commandAdd("gpio",[](char** param,u8 parCnt){
         if(parCnt == 2){
@@ -556,7 +555,7 @@ ArduinoOS::ArduinoOS(){
         commandList();
         if(parCnt == 2)
         commandList(param[1]);
-    },"",true);
+    },NULL,true);
 
     commandAdd("get",[](char** param,u8 parCnt){
         if(parCnt == 2)
@@ -581,7 +580,7 @@ ArduinoOS::ArduinoOS(){
 
     commandAdd("clear",[](char** param,u8 parCnt){
         p(textEscClear);
-    },"",true);
+    },NULL,true);
 
     commandAdd("lock",[](char** param,u8 parCnt){
         locked = true;

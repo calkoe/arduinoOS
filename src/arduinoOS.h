@@ -47,23 +47,23 @@ class ArduinoOS{
         enum AOS_DT    { AOS_DT_BOOL, AOS_DT_INT, AOS_DT_DOUBLE, AOS_DT_STRING };
         enum AOS_ESC   { ESC_STATE_NONE, ESC_STATE_START, ESC_STATE_CODE};
         struct AOS_CMD {
-            char*       name;
+            const char* name;
             void        (*function)(char**, u8);
-            char*       description;
+            const char* description;
             bool        hidden;
             AOS_CMD*    aos_cmd;
         };
         struct AOS_VAR {
-            char*       name;
+            const char* name;
             void*       value;
-            char*       description;
+            const char* description;
             bool        hidden;
             bool        protect;
             AOS_DT      aos_dt;
             AOS_VAR*    aos_var;
         };
         struct AOS_EVT {
-            char*       name;
+            const char* name;
             void        (*function)(void*);
             bool        active;
             void*       value;
@@ -97,7 +97,7 @@ class ArduinoOS{
         static void    charIn(char,bool);
         static bool    charEsc(char);
         static void    clearBuffer(char*,unsigned int);
-        static bool    _variableAdd(char*,void*,char*,bool,bool,AOS_DT);
+        static bool    _variableAdd(const char*,void*,const char*,bool,bool,AOS_DT);
         static void    terminalPrefix();
         static void    terminalLine();
         static void    terminalParseCommand();
@@ -129,29 +129,29 @@ class ArduinoOS{
 
         //API TASKS
         static u16              setInterval(void(*)(),u16);
-        static u16              setTimeout(void(*)(),u16,bool=false);
+        static u16              setTimeout(void(*)(),u16,bool = false);
         static AOS_TASK*        unsetInterval(u16);
         static void             taskLoop();
 
         //API Events
-        static void             eventListen(char*,void(*)(void*));
-        static void             eventEmit(char*,void*,bool = false);
+        static void             eventListen(const char*,void(*)(void*));
+        static void             eventEmit(const char*,void*,bool = false);
         static void             eventLoop();
 
         //API Commands
-        static bool             commandAdd(char*,void (*)(char**, u8),char* = "",bool = false);
-        static void             commandList(char* = "");
-        static void             commandMan(char*);
-        static bool             commandCall(char*,char** = 0, u8 = 0);
+        static bool             commandAdd(const char*,void (*)(char**, u8),const char* = NULL,bool = false);
+        static void             commandList(const char* = NULL);
+        static void             commandMan(const char*);
+        static bool             commandCall(const char*,char** = 0, u8 = 0);
 
         //API Variables
-        static bool             variableAdd(char*,bool&,  char* = "",bool = false,bool = false);
-        static bool             variableAdd(char*,int&,   char* = "",bool = false,bool = false);
-        static bool             variableAdd(char*,double&,char* = "",bool = false,bool = false);
-        static bool             variableAdd(char*,String&,char* = "",bool = false,bool = false);
-        static void             variableList(char* = "");
-        static bool             variableSet(char*,char*);
-        static void*            variableGet(char*);
+        static bool             variableAdd(const char*,bool&,  const char* = NULL,bool = false,bool = false);
+        static bool             variableAdd(const char*,int&,   const char* = NULL,bool = false,bool = false);
+        static bool             variableAdd(const char*,double&,const char* = NULL,bool = false,bool = false);
+        static bool             variableAdd(const char*,String&,const char* = NULL,bool = false,bool = false);
+        static void             variableList(const char* = NULL);
+        static bool             variableSet(const char*,char*);
+        static void*            variableGet(const char*);
         static void             variableLoad(bool = false);
 
         //API IO

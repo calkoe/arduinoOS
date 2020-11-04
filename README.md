@@ -9,7 +9,7 @@
 * Robust design with no Heap-Fragmentation
 * Integrated Eventmanager + Timer
 * Wifi + Telnet + Mqtt + OTA Features (ESP8266 only)
-* Small AVR footprint (<770 Bytes of SRAM)
+* Small AVR footprint (<1k Bytes of SRAM)
 
 **Serial CLI: (Baud 9600 on AVR | 112500 on ESP8266)**
 ```
