@@ -320,10 +320,10 @@ void ArduinoOS::variableList(const char* filter){
     AOS_VAR* i{aos_var};
     while(i != nullptr){
         if(!i->hidden && (!filter || strstr(i->name, filter))){ 
-            if(i->aos_dt==AOS_DT_BOOL)   snprintf(OUT,LONG,"%-20s : %-20s\t%s %s", i->name,*(bool*)(i->value) ? "true" : "false",i->description,(i->protect ? "(Protected)":NULL));
-            if(i->aos_dt==AOS_DT_INT)    snprintf(OUT,LONG,"%-20s : %-20d\t%s %s", i->name,*(int*)(i->value),i->description,(i->protect ? "(Protected)":NULL));
-            if(i->aos_dt==AOS_DT_DOUBLE) {char str_temp[SHORT];dtostrf(*(double*)(i->value), 4, 2, str_temp);snprintf(OUT,LONG,"%-20s : %-20s\t%s %s", i->name,str_temp,i->description,(i->protect ? "(Protected)":NULL));};
-            if(i->aos_dt==AOS_DT_STRING) snprintf(OUT,LONG,"%-20s : %-20s\t%s %s", i->name,(*(String*)(i->value)).c_str(),i->description,(i->protect ? "(Protected)":NULL));
+            if(i->aos_dt==AOS_DT_BOOL)   snprintf(OUT,LONG,"%-20s : %-20s\t%s %s", i->name,*(bool*)(i->value) ? "true" : "false",i->description,(i->protect ? "(Protected)":""));
+            if(i->aos_dt==AOS_DT_INT)    snprintf(OUT,LONG,"%-20s : %-20d\t%s %s", i->name,*(int*)(i->value),i->description,(i->protect ? "(Protected)":""));
+            if(i->aos_dt==AOS_DT_DOUBLE) {char str_temp[SHORT];dtostrf(*(double*)(i->value), 4, 2, str_temp);snprintf(OUT,LONG,"%-20s : %-20s\t%s %s", i->name,str_temp,i->description,(i->protect ? "(Protected)":""));};
+            if(i->aos_dt==AOS_DT_STRING) snprintf(OUT,LONG,"%-20s : %-20s\t%s %s", i->name,(*(String*)(i->value)).c_str(),i->description,(i->protect ? "(Protected)":""));
             o(OUT);
         }
         i = i->aos_var;
@@ -529,9 +529,9 @@ int ArduinoOS::freeMemory() {
 #endif
 
 ArduinoOS::ArduinoOS(){
-    variableAdd("sys/date",     date,NULL,true,true);
-    variableAdd("sys/hostname", hostname,NULL);
-    variableAdd("sys/password", password,NULL);
+    variableAdd("sys/date",     date,"",true,true);
+    variableAdd("sys/hostname", hostname,"");
+    variableAdd("sys/password", password,"");
 
     commandAdd("gpio",[](char** param,u8 parCnt){
         if(parCnt == 2){
@@ -555,7 +555,7 @@ ArduinoOS::ArduinoOS(){
         commandList();
         if(parCnt == 2)
         commandList(param[1]);
-    },NULL,true);
+    },"",true);
 
     commandAdd("get",[](char** param,u8 parCnt){
         if(parCnt == 2)
@@ -580,7 +580,7 @@ ArduinoOS::ArduinoOS(){
 
     commandAdd("clear",[](char** param,u8 parCnt){
         p(textEscClear);
-    },NULL,true);
+    },"",true);
 
     commandAdd("lock",[](char** param,u8 parCnt){
         locked = true;

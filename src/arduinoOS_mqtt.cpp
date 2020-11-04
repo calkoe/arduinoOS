@@ -115,7 +115,7 @@ ArduinoOS_mqtt::ArduinoOS_mqtt():ArduinoOS_wifi(){
 
     commandAdd("mqttStatus",          [](char** param,u8 parCnt){
         o("");o("📡 MQTT:");
-        const char* m{NULL};
+        const char* m{""};
         switch(mqtt->lastError()){
             case LWMQTT_SUCCESS:                    m = "LWMQTT_SUCCESS"; break;
             case LWMQTT_BUFFER_TOO_SHORT:           m = "LWMQTT_BUFFER_TOO_SHORT"; break;
@@ -133,7 +133,7 @@ ArduinoOS_mqtt::ArduinoOS_mqtt():ArduinoOS_wifi(){
             case LWMQTT_PONG_TIMEOUT:               m = "LWMQTT_PONG_TIMEOUT"; break;
             default: m = "UNKOWN";
         };
-        const char* r{NULL};
+        const char* r{""};
         switch(mqtt->returnCode()){
             case LWMQTT_CONNECTION_ACCEPTED:        r = "LWMQTT_CONNECTION_ACCEPTED"; break;
             case LWMQTT_UNACCEPTABLE_PROTOCOL:      r = "LWMQTT_UNACCEPTABLE_PROTOCOL"; break;

@@ -139,17 +139,17 @@ class ArduinoOS{
         static void             eventLoop();
 
         //API Commands
-        static bool             commandAdd(const char*,void (*)(char**, u8),const char* = NULL,bool = false);
-        static void             commandList(const char* = NULL);
+        static bool             commandAdd(const char*,void (*)(char**, u8),const char* = "",bool = false);
+        static void             commandList(const char* = "");
         static void             commandMan(const char*);
         static bool             commandCall(const char*,char** = 0, u8 = 0);
 
         //API Variables
-        static bool             variableAdd(const char*,bool&,  const char* = NULL,bool = false,bool = false);
-        static bool             variableAdd(const char*,int&,   const char* = NULL,bool = false,bool = false);
-        static bool             variableAdd(const char*,double&,const char* = NULL,bool = false,bool = false);
-        static bool             variableAdd(const char*,String&,const char* = NULL,bool = false,bool = false);
-        static void             variableList(const char* = NULL);
+        static bool             variableAdd(const char*,bool&,  const char* = "",bool = false,bool = false);
+        static bool             variableAdd(const char*,int&,   const char* = "",bool = false,bool = false);
+        static bool             variableAdd(const char*,double&,const char* = "",bool = false,bool = false);
+        static bool             variableAdd(const char*,String&,const char* = "",bool = false,bool = false);
+        static void             variableList(const char* = "");
         static bool             variableSet(const char*,char*);
         static void*            variableGet(const char*);
         static void             variableLoad(bool = false);
