@@ -37,7 +37,7 @@ class ArduinoOS_wifi : public ArduinoOS{
         static void begin();
         static void loop();
 
-        //API Settings
+        //API
         static bool   telnet_enable;
         static bool   ntp_enable;
         static String ntp_server;
@@ -49,10 +49,10 @@ class ArduinoOS_wifi : public ArduinoOS{
         static String sta_subnet;
         static String sta_gateway;
         static String sta_dns;
-        static bool   sta_connected();
         static bool   ap_enable;
         static String ap_network;
         static String ap_password;
+        static bool   connected();
 
 };
 

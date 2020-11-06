@@ -26,14 +26,14 @@ void ArduinoOS_wifi::begin(){
     config(0);
     //1S Set Status
     setInterval([](){
-        if(sta_enable && (ArduinoOS::status == 0 || ArduinoOS::status == 1) && sta_connected())  ArduinoOS::status = 5;
-        if(sta_enable && !sta_connected()) ArduinoOS::status = 1;
+        if(sta_enable && (ArduinoOS::status == 0 || ArduinoOS::status == 1) && connected())  ArduinoOS::status = 5;
+        if(sta_enable && !connected()) ArduinoOS::status = 1;
         if(ap_enable) ArduinoOS::status = 0;
         if(!ap_enable && !sta_enable) ArduinoOS::status = 5;
     },1000);
     //10S Time update
     setInterval([](){
-        if(ntp_enable && ntp_server && sta_connected()){
+        if(ntp_enable && ntp_server && connected()){
             timeClient.update();
         };
     },10000);
@@ -116,7 +116,7 @@ bool ArduinoOS_wifi::config(u8 s){
 
     return true;
 };
-bool ArduinoOS_wifi::sta_connected(){
+bool ArduinoOS_wifi::connected(){
     return (WiFi.status() == WL_CONNECTED && WiFi.localIP().toString() != "(IP unset)" && WiFi.localIP().toString() != "0.0.0.0");
 }
 inline s32 ArduinoOS_wifi::calcRSSI(s32 r){
@@ -205,7 +205,7 @@ ArduinoOS_wifi::ArduinoOS_wifi():ArduinoOS(){
         IPAddress apIP          = WiFi.softAPIP();
         snprintf(OUT,LONG,"%-20s : %s","Mode",m);o(OUT);
         snprintf(OUT,LONG,"%-20s : %s","Status",s);o(OUT);
-        snprintf(OUT,LONG,"%-20s : %s","Connected",sta_connected()?"true":"false");o(OUT);
+        snprintf(OUT,LONG,"%-20s : %s","Connected",connected()?"true":"false");o(OUT);
         snprintf(OUT,LONG,"%-20s : %s","Hostname",hostname.c_str());o(OUT);
         snprintf(OUT,LONG,"%-20s : %s","LocalMAC",WiFi.macAddress().c_str());o(OUT);
         snprintf(OUT,LONG,"%-20s : %d.%d.%d.%d","LocalIP",localIP[0],localIP[1],localIP[2],localIP[3]);o(OUT);

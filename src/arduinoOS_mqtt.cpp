@@ -105,6 +105,11 @@ void ArduinoOS_mqtt::handle(MQTTClient *client, char* topic, char* payload, s32 
     };
 };
 
+bool ArduinoOS_mqtt::connected(){
+    return (mqtt_enable && mqtt_server && mqtt->connected());
+}
+
+
 ArduinoOS_mqtt::ArduinoOS_mqtt():ArduinoOS_wifi(){
     variableAdd("mqtt/mqtt_enable",    mqtt_enable    ,           "📡 mqtt_enable MQTT");
     variableAdd("mqtt/mqtt_server",    mqtt_server    ,           "📡 MQTT mqtt_server IP or Name");

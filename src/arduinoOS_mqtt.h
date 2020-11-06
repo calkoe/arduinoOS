@@ -39,7 +39,7 @@ class ArduinoOS_mqtt : public ArduinoOS_wifi{
         static void subscripe(char*,u8,void (*function)(char*,char*));
         static void unsubscripe(char*);
 
-        //API Settings
+        //API
         static bool         mqtt_connected;
         static bool         mqtt_enable;
         static String       mqtt_server;
@@ -49,6 +49,8 @@ class ArduinoOS_mqtt : public ArduinoOS_wifi{
         static String       mqtt_clientID;
         static String       mqtt_user;
         static String       mqtt_password;
+        static bool         connected();
+
 
 };
 
