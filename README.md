@@ -47,13 +47,13 @@ telnet/enable        : true                     📶 Enable Telnet support on Po
 ntp/enable           : false                    ⏱  Enable NTP Sync 
 ntp/server           :                          ⏱  NTP Server adress 
 ntp/offset           : 0                        ⏱  NTP Time offset 
-mqtt/mqtt_enable     : false                    📡 mqtt_enable MQTT 
-mqtt/mqtt_server     :                          📡 MQTT mqtt_server IP or Name 
-mqtt/mqtt_port       : 1883                     📡 MQTT mqtt_server Port 
-mqtt/mqtt_tls        : false                    📡 Use TLS 
-mqtt/mqtt_tlsVerify  : false                    📡 Verify TLS Certificates 
-mqtt/mqtt_user       :                          📡 Username 
-mqtt/mqtt_password   :                          📡 Password 
+mqtt/enable          : false                    📡 mqtt_enable MQTT 
+mqtt/server          :                          📡 MQTT mqtt_server IP or Name 
+mqtt/port            : 1883                     📡 MQTT mqtt_server Port 
+mqtt/tls             : false                    📡 Use TLS 
+mqtt/tlsVerify       : false                    📡 Verify TLS Certificates 
+mqtt/user            :                          📡 Username 
+mqtt/password        :                          📡 Password 
 demo/bool            : true                      
 demo/int             : 1234                      
 demo/double          : 1234.12                   
