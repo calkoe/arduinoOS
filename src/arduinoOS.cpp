@@ -141,7 +141,7 @@ ArduinoOS::AOS_TASK* ArduinoOS::unsetInterval(u16 idDel){
 void ArduinoOS::taskLoop(){
     AOS_TASK* i{aos_task};
     while(i){
-        if(i->interval && (unsigned long)(millis()-i->timestamp)>=i->interval){
+        if(!i->interval || (unsigned long)(millis()-i->timestamp)>=i->interval){
             //o("Abweichung: " + (String)(unsigned long)(ms-i->timestamp));
             (*(i->function))();
             i->timestamp = millis();
