@@ -30,7 +30,7 @@ void ArduinoOS_mqtt::begin(){
                     t = t->sub;
                 }
             }
-            if(!mqtt->connected() && ArduinoOS_wifi::sta_connected()){ 
+            if(!mqtt->connected() && ArduinoOS_wifi::connected()){ 
                 mqtt_connected = false;
                 mqtt->connect(hostname.c_str(),mqtt_user.c_str(),mqtt_password.c_str());
             };
