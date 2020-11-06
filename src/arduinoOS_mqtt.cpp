@@ -56,10 +56,12 @@ bool ArduinoOS_mqtt::config(u8 s){
         mqtt->onMessageAdvanced(handle);
         if(mqtt_tls){
             netSecure = new WiFiClientSecure;
+            netSecure->setTimeout(500);
             if(!mqtt_tlsVerify) netSecure->setInsecure();
             mqtt->begin(mqtt_server.c_str(),mqtt_port,*netSecure);
         }else{
             net = new WiFiClient;
+            net->setTimeout(500);
             mqtt->begin(mqtt_server.c_str(),mqtt_port,*net);
         };
     }
@@ -111,13 +113,13 @@ bool ArduinoOS_mqtt::connected(){
 
 
 ArduinoOS_mqtt::ArduinoOS_mqtt():ArduinoOS_wifi(){
-    variableAdd("mqtt/mqtt_enable",    mqtt_enable    ,           "📡 mqtt_enable MQTT");
-    variableAdd("mqtt/mqtt_server",    mqtt_server    ,           "📡 MQTT mqtt_server IP or Name");
-    variableAdd("mqtt/mqtt_port",      mqtt_port      ,           "📡 MQTT mqtt_server Port");
-    variableAdd("mqtt/mqtt_tls",       mqtt_tls       ,           "📡 Use TLS");
-    variableAdd("mqtt/mqtt_tlsVerify", mqtt_tlsVerify ,           "📡 Verify TLS Certificates");
-    variableAdd("mqtt/mqtt_user",      mqtt_user      ,           "📡 Username");
-    variableAdd("mqtt/mqtt_password",  mqtt_password  ,           "📡 Password");
+    variableAdd("mqtt/enable",    mqtt_enable    ,           "📡 mqtt_enable MQTT");
+    variableAdd("mqtt/server",    mqtt_server    ,           "📡 MQTT mqtt_server IP or Name");
+    variableAdd("mqtt/port",      mqtt_port      ,           "📡 MQTT mqtt_server Port");
+    variableAdd("mqtt/tls",       mqtt_tls       ,           "📡 Use TLS");
+    variableAdd("mqtt/tlsVerify", mqtt_tlsVerify ,           "📡 Verify TLS Certificates");
+    variableAdd("mqtt/user",      mqtt_user      ,           "📡 Username");
+    variableAdd("mqtt/password",  mqtt_password  ,           "📡 Password");
 
     commandAdd("mqttStatus",          [](char** param,u8 parCnt){
         o("");o("📡 MQTT:");
