@@ -9,10 +9,10 @@
 //  https://github.com/calkoe/arduinoOS
 //
 
-#include <arduino.h>
 #include <EEPROM.h>
 
 #if defined ESP8266
+    #include <ESP.h>
     #define SHORT               128     //Programm Parameter, Parameter Count
     #define LONG                128     //BufferIn, BufferOut, TerminalHistory
     #define SERSPEED            115200 
@@ -20,6 +20,7 @@
     #define RESETBUTTON         0
     #define EEPROM_SIZE         1024    //Only for ESP
 #else
+    #include <Arduino.h>
     #include <avr/wdt.h>
     #define SHORT               16      //Programm Parameter, Parameter Count
     #define LONG                64      //IO Buffer
@@ -27,7 +28,6 @@
     #define STATUSLED           LED_BUILTIN
     #define RESETBUTTON         0
 #endif
-
 
 //Text
 const char textErrorBegin[] PROGMEM         = "call variableAdd() before begin() !";
@@ -98,7 +98,7 @@ class ArduinoOS{
         //IO
         static void    charIn(char,bool);
         static bool    charEsc(char);
-        static void    clearBuffer(char*,unsigned int);
+        static void    clearBuffer();
         static bool    _variableAdd(const char*,void*,const char*,bool,bool,AOS_DT);
         static void    terminalPrefix();
         static void    terminalLine();

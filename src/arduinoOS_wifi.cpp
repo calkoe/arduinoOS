@@ -1,4 +1,4 @@
-#include <arduinoOS_wifi.h>
+#include "arduinoOS_wifi.h"
 #ifdef ESP8266
 
 //Global
@@ -43,11 +43,11 @@ void ArduinoOS_wifi::begin(){
         static bool state = false;
         if(state != digitalRead(ArduinoOS::resetButton)){
             state = digitalRead(ArduinoOS::resetButton);
-            if(state) return;
-            delay(10);
-            ap_enable = !ap_enable;
-            variableLoad(true);
-            config(1);
+            if(!state){
+                ap_enable = !ap_enable;
+                variableLoad(true);
+                config(1);
+            }
         }
     },11);
 };
@@ -68,18 +68,18 @@ bool ArduinoOS_wifi::config(u8 s){
         WiFi.hostname(hostname); 
         WiFi.mode(WIFI_OFF);
         //wifi_set_sleep_type(NONE_SLEEP_T); //https://blog.creations.de/?p=149 //Remove ??
-
-        //Telnet
-        if(TelnetServer) delete TelnetServer;
-        if(TelnetClient) delete[] TelnetClient;
-        if(telnet_enable){
-            TelnetServer = new WiFiServer(23);
-            TelnetClient = new WiFiClient[MAX_TELNET_CLIENTS];
-            eventListen("o",telnetOut);
-            TelnetServer->begin();
-            TelnetServer->setNoDelay(true);
-        }
     };
+
+    //Telnet
+    if(TelnetServer) delete TelnetServer;
+    if(TelnetClient) delete[] TelnetClient;
+    if(telnet_enable){
+        TelnetServer = new WiFiServer(23);
+        TelnetClient = new WiFiClient[MAX_TELNET_CLIENTS];
+        eventListen("o",telnetOut);
+        TelnetServer->begin();
+        TelnetServer->setNoDelay(true);
+    }
 
     //NTP
     if(ntp_enable && ntp_server){
@@ -140,7 +140,7 @@ void ArduinoOS_wifi::telnetLoop(){
         p(textWelcome);
         commandList();             //Unfify with Serial ??
         terminalPrefix();
-        clearBuffer(IO[IOC],LONG);
+        clearBuffer();
         break;
       };
     };

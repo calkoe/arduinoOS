@@ -8,7 +8,14 @@
     },
     "version": "1.0.0",
     "frameworks": "arduino",
-    "platforms": "*",
+    "examples": [
+        {
+            "name": "Default",
+            "base": "examples/arduinoOS",
+            "files": ["arduinoOS.ino"]
+        }
+    ],
+    "platforms": ["atmelavr","espressif8266"],
     "dependencies": {
         "MQTT": "https://github.com/256dpi/arduino-mqtt.git",
         "NTPClient": "https://github.com/arduino-libraries/NTPClient.git"

@@ -1,4 +1,4 @@
-#include <arduinoOS.h>
+#include "arduinoOS.h"
 
 //Global
 bool                    ArduinoOS::isBegin = false;
@@ -68,7 +68,7 @@ void ArduinoOS::begin(){
     o("");
     commandList();
     terminalPrefix();
-    clearBuffer(IO[IOC],LONG);
+    clearBuffer();
 };
 void ArduinoOS::loop(){
     //Events
@@ -439,7 +439,7 @@ void ArduinoOS::charIn(char c,bool echo){
             if(!strcmp(IO[IOC],password.c_str())) locked = false;
             IOC = !IOC;
             terminalPrefix();
-            clearBuffer(IO[IOC],LONG);
+            clearBuffer();
         }
         lc=c;
 };
@@ -471,8 +471,9 @@ bool ArduinoOS::charEsc(char c){
     }
     return ret;
 }
-void ArduinoOS::clearBuffer(char* ca,unsigned int l){
-    for(unsigned int i{0};i<l;i++)ca[i]=0;IOP[IOC]=0;
+void ArduinoOS::clearBuffer(){
+    for(unsigned int i{0};i<LONG;i++)IO[IOC][i]=0;
+    IOP[IOC]=0;
 };
 void ArduinoOS::terminalPrefix(){
     if(locked){
@@ -489,7 +490,7 @@ void ArduinoOS::terminalLine(){
     o(IO[IOC],false);
 }
 void ArduinoOS::terminalParseCommand(){
-    u8     parCnt{0};
+    u8          parCnt{0};
     char*       param[SHORT]{NULL};
     char        search{' '};
     unsigned    s{0};

@@ -1,7 +1,7 @@
 #pragma once
 #ifdef ESP8266
 
-#include <arduinoOS_wifi.h>
+#include "arduinoOS_wifi.h"
 #include <MQTT.h>
 
 class ArduinoOS_mqtt : public ArduinoOS_wifi{
