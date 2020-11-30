@@ -118,8 +118,8 @@ class ArduinoOS{
         static HardwareSerial*  serialInstance;
         static u32              serialBaud;
         static u8               status;
-        static u8               statusLed;
-        static u8               resetButton;
+        static s8               statusLed;
+        static s8               resetButton;
         static bool             watchdogEnable;
         static bool             autoLoad;
         static bool             autoReset;

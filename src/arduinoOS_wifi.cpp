@@ -40,13 +40,15 @@ void ArduinoOS_wifi::begin(){
     //LOOP 10ms Telnet + Button
     setInterval([](){
         if(telnet_enable) telnetLoop();
-        static bool state = false;
-        if(state != digitalRead(ArduinoOS::resetButton)){
-            state = digitalRead(ArduinoOS::resetButton);
-            if(!state){
-                ap_enable = !ap_enable;
-                variableLoad(true);
-                config(1);
+        if(ArduinoOS::resetButton>=0){
+            static bool state = false;
+            if(state != digitalRead(ArduinoOS::resetButton)){
+                state = digitalRead(ArduinoOS::resetButton);
+                if(!state){
+                    ap_enable = !ap_enable;
+                    variableLoad(true);
+                    config(1);
+                }
             }
         }
     },11);
