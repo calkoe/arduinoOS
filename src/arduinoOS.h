@@ -38,6 +38,7 @@ const char textEnterPassword[] PROGMEM      = "Enter password to login: ";
 const char textCommands[] PROGMEM           = "Commands:";
 const char textVariables[] PROGMEM          = "Variables:";
 const char textNotFound[] PROGMEM           = "Parameter not found!";
+const char textTasks[] PROGMEM              = "Current Tasks";
 const char textEscClear[] PROGMEM           = "\033[2J\033[1;1H";
 const char textOk[] PROGMEM                 = "ok";
 
@@ -74,8 +75,11 @@ class ArduinoOS{
         struct AOS_TASK {
             u16                 id;
             void                (*function)();
-            unsigned long       timestamp;
+            u64                timestamp;
             u16                 interval;
+            const char*         description;  
+            u16                 time;  
+            u16                 timeMax;  
             bool                repeat;
             AOS_TASK*           aos_task;
         };
@@ -94,6 +98,7 @@ class ArduinoOS{
         static unsigned         IOP[2];
         static char             IO[2][LONG];
         static char             OUT[LONG];
+        static u32              loopCounter;
 
         //IO
         static void    charIn(char,bool);
@@ -131,10 +136,11 @@ class ArduinoOS{
         static String           firmware;
 
         //API TASKS
-        static u16              setInterval(void(*)(),u16);
-        static u16              setTimeout(void(*)(),u16,bool = false);
+        static u16              setInterval(void(*)(),u16,const char* = "");
+        static u16              setTimeout(void(*)(),u16,const char* = "",bool = false);
         static AOS_TASK*        unsetInterval(u16);
         static void             taskLoop();
+        static void             taskManager();
 
         //API Events
         static void             eventListen(const char*,void(*)(void*));

@@ -24,20 +24,24 @@ WiFiClient* ArduinoOS_wifi::TelnetClient;
 void ArduinoOS_wifi::begin(){
     ArduinoOS::begin();
     config(0);
-    //1S Set Status
+    //LOOP 1000ms
     setInterval([](){
         if(sta_enable && (ArduinoOS::status == 0 || ArduinoOS::status == 1) && connected())  ArduinoOS::status = 5;
         if(sta_enable && !connected()) ArduinoOS::status = 1;
         if(ap_enable) ArduinoOS::status = 0;
         if(!ap_enable && !sta_enable) ArduinoOS::status = 5;
-    },1000);
-    //10S Time update
+    },1000,"wifiStatus");
+    //LOOP 1ms
+    setInterval([](){
+        yield();
+    },5,"wifiLoop");
+    //LOOP 10000ms
     setInterval([](){
         if(ntp_enable && ntp_server && connected()){
             timeClient.update();
         };
-    },10000);
-    //LOOP 10ms Telnet + Button
+    },10000,"wifiNtpLoop");
+    //LOOP 10ms
     setInterval([](){
         if(telnet_enable) telnetLoop();
         if(ArduinoOS::resetButton>=0){
@@ -51,12 +55,10 @@ void ArduinoOS_wifi::begin(){
                 }
             }
         }
-    },11);
+    },20,"wifiTelnetLoop");
 };
 void ArduinoOS_wifi::loop(){
-    yield();
     ArduinoOS::loop();
-    yield();
 };
 
 //Methods

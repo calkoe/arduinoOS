@@ -17,7 +17,7 @@ String                  ArduinoOS_mqtt::mqtt_password{};
 void ArduinoOS_mqtt::begin(){
     ArduinoOS_wifi::begin();
     config(0);
-    //1S Connection Management
+    //LOOP 1000ms
     setInterval([](){
         if(mqtt_enable && ArduinoOS::status == 2 &&  mqtt->connected()) ArduinoOS::status = 5; 
         if(mqtt_enable && ArduinoOS::status == 5 && !mqtt->connected()) ArduinoOS::status = 2; 
@@ -35,11 +35,11 @@ void ArduinoOS_mqtt::begin(){
                 mqtt->connect(hostname.c_str(),mqtt_user.c_str(),mqtt_password.c_str());
             };
         }
-    },1000);
-    //LOOP 10ms
+    },1000,"mqttStatus");
+    //LOOP 12ms
     setInterval([](){
         if(mqtt_enable) mqtt->loop();
-    },12);
+    },20,"mqttLoop");
 };
 void ArduinoOS_mqtt::loop(){
     ArduinoOS_wifi::loop();

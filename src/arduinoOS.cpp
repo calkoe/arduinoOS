@@ -13,6 +13,7 @@ char                    ArduinoOS::IO[][LONG]{0};
 char                    ArduinoOS::OUT[LONG]{0};
 u8                      ArduinoOS::status{5};
 unsigned                ArduinoOS::usedEeprom{0};
+u32                     ArduinoOS::loopCounter{0};
 bool                    ArduinoOS::watchdogEnable{false};
 bool                    ArduinoOS::serialEnable{true};
 u32                     ArduinoOS::serialBaud{SERSPEED};
@@ -28,7 +29,7 @@ String                  ArduinoOS::password{"aos"};
 String                  ArduinoOS::firmware{"-"};
 
 void ArduinoOS::begin(){
-    //Status LED
+    //LOOP 180ms
     if(statusLed>=0){
         setInterval([](){
             if(!status)          digitalWrite(statusLed,!digitalRead(statusLed));
@@ -39,7 +40,7 @@ void ArduinoOS::begin(){
                 if(p<2*status) digitalWrite(statusLed,o=!o);
                 if(p==10){p=0;o=1;}else p++;
             }
-        },180);
+        },180,"statusLed");
     };
     //LOOP 10ms
     setInterval([](){
@@ -50,7 +51,11 @@ void ArduinoOS::begin(){
             while(serialInstance->available())
                 charIn(serialInstance->read(),true);
         }
-    },10);
+    },50,"serial");
+    //LOOP 10ms
+    setInterval([](){
+        eventLoop();
+    },50,"events");
     //Setup
     isBegin = true;
     if(serialEnable) serialInstance->begin(serialBaud);
@@ -71,9 +76,6 @@ void ArduinoOS::begin(){
     clearBuffer();
 };
 void ArduinoOS::loop(){
-    //Events
-    eventLoop();
-    //Tasks
     taskLoop();
 };
 
@@ -84,8 +86,8 @@ void ArduinoOS::loop(){
  * @param  intervall
  * @return intervall Id
 */
-u16 ArduinoOS::setInterval(void(*f)(),u16 i){
-    return setTimeout(f,i,true);
+u16 ArduinoOS::setInterval(void(*f)(),u16 i,const char* description){
+    return setTimeout(f,i,description,true);
 };
 
 /**
@@ -96,9 +98,9 @@ u16 ArduinoOS::setInterval(void(*f)(),u16 i){
  * @param  repeat 
  * @return timeout Id
 */
-u16 ArduinoOS::setTimeout(void(*f)(),u16 i, bool repeat){
+u16 ArduinoOS::setTimeout(void(*f)(),u16 i, const char* description, bool repeat){
     static u16 idSerial{1};
-    AOS_TASK* e = new AOS_TASK{idSerial,f,millis(),i,repeat,nullptr};
+    AOS_TASK* e = new AOS_TASK{idSerial,f,millis(),i,description,0,0,repeat,nullptr};
     if(!aos_task){
         aos_task = e;
     }else{
@@ -141,13 +143,39 @@ ArduinoOS::AOS_TASK* ArduinoOS::unsetInterval(u16 idDel){
 void ArduinoOS::taskLoop(){
     AOS_TASK* i{aos_task};
     while(i){
-        if(!i->interval || (unsigned long)(millis()-i->timestamp)>=i->interval){
+        if(!i->interval || (u64)(millis()-i->timestamp)>=i->interval){
             //o("Abweichung: " + (String)(unsigned long)(ms-i->timestamp));
+            u64 t = millis();
             (*(i->function))();
+            t = (u64)millis() - t;
+            i->time = t; 
+            if(t>i->timeMax) i->timeMax = t; 
             i->timestamp = millis();
             i = !i->repeat ? unsetInterval(i->id) : i->aos_task;
         }else i = i->aos_task;
     }
+    loopCounter++;
+};
+
+/**
+ * Display Current Tasks
+*/
+void ArduinoOS::taskManager(){
+    p(textTasks);
+    AOS_TASK* i{aos_task};
+    while(i){
+        snprintf(OUT,LONG,"> %-20s : i: %-9i t#: %-9i t+: %-5i",i->description,i->interval,i->time,i->timeMax);
+        o(OUT);
+        i = i->aos_task;
+    };
+    loopCounter=0;
+    setTimeout([](){
+        o("");
+        snprintf(OUT,LONG,"> Loop Freq: %iHz", loopCounter/3);
+        o(OUT);
+        terminalPrefix();
+    },3000);
+    
 };
 
 /**
@@ -322,10 +350,10 @@ void ArduinoOS::variableList(const char* filter){
     AOS_VAR* i{aos_var};
     while(i != nullptr){
         if(!i->hidden && (!filter || strstr(i->name, filter))){ 
-            if(i->aos_dt==AOS_DT_BOOL)   snprintf(OUT,LONG,"%-20s : %-20s\t%s %s", i->name,*(bool*)(i->value) ? "true" : "false",i->description,(i->protect ? "(Protected)":""));
-            if(i->aos_dt==AOS_DT_INT)    snprintf(OUT,LONG,"%-20s : %-20d\t%s %s", i->name,*(int*)(i->value),i->description,(i->protect ? "(Protected)":""));
-            if(i->aos_dt==AOS_DT_DOUBLE) {char str_temp[SHORT];dtostrf(*(double*)(i->value), 4, 2, str_temp);snprintf(OUT,LONG,"%-20s : %-20s\t%s %s", i->name,str_temp,i->description,(i->protect ? "(Protected)":""));};
-            if(i->aos_dt==AOS_DT_STRING) snprintf(OUT,LONG,"%-20s : %-20s\t%s %s", i->name,(*(String*)(i->value)).c_str(),i->description,(i->protect ? "(Protected)":""));
+            if(i->aos_dt==AOS_DT_BOOL)   snprintf(OUT,LONG,"%-30s : %-20s\t%s %s", i->name,*(bool*)(i->value) ? "true" : "false",i->description,(i->protect ? "(Protected)":""));
+            if(i->aos_dt==AOS_DT_INT)    snprintf(OUT,LONG,"%-30s : %-20d\t%s %s", i->name,*(int*)(i->value),i->description,(i->protect ? "(Protected)":""));
+            if(i->aos_dt==AOS_DT_DOUBLE) {char str_temp[SHORT];dtostrf(*(double*)(i->value), 4, 2, str_temp);snprintf(OUT,LONG,"%-30s : %-20s\t%s %s", i->name,str_temp,i->description,(i->protect ? "(Protected)":""));};
+            if(i->aos_dt==AOS_DT_STRING) snprintf(OUT,LONG,"%-30s : %-20s\t%s %s", i->name,(*(String*)(i->value)).c_str(),i->description,(i->protect ? "(Protected)":""));
             o(OUT);
         }
         i = i->aos_var;
@@ -608,6 +636,10 @@ ArduinoOS::ArduinoOS(){
         snprintf(OUT,LONG,"%-20s : %s","COMPILED",date.c_str());o(OUT);
         snprintf(OUT,LONG,"%-20s : %d B","HEAP",freeMemory());o(OUT);
         snprintf(OUT,LONG,"%-20s : %d B","EERPOM",usedEeprom);o(OUT);
+    },"🖥");
+
+    commandAdd("tasks", [](char** param,u8 parCnt){
+        taskManager();
     },"🖥");
 
 }
