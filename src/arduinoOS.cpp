@@ -643,3 +643,12 @@ ArduinoOS::ArduinoOS(){
     },"🖥");
 
 }
+
+//TOOLS
+double ArduinoOS::mapVal(double x, int in_min, int in_max, int out_min, int out_max)
+{
+    double r = (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+    if(r > out_max) r = out_max;
+    if(r < out_min) r = out_min;
+    return r;
+}

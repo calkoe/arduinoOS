@@ -9,9 +9,8 @@
 //  https://github.com/calkoe/arduinoOS
 //
 
-#include <EEPROM.h>
-
 #if defined ESP8266
+    #include <EEPROM.h>
     #include <ESP.h>
     #define SHORT               128     //Programm Parameter, Parameter Count
     #define LONG                128     //BufferIn, BufferOut, TerminalHistory
@@ -168,5 +167,8 @@ class ArduinoOS{
         static void    o(const char*,bool=true);
         static void    o(String,bool=true);
         static void    p(const char*,bool=true);
+
+        //TOOLS
+        double mapVal(double, int, int, int, int);
 
 };
