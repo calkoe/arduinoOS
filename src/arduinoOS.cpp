@@ -14,14 +14,14 @@ char                    ArduinoOS::OUT[LONG]{0};
 u8                      ArduinoOS::status{5};
 unsigned                ArduinoOS::usedEeprom{0};
 u32                     ArduinoOS::loopCounter{0};
-bool                    ArduinoOS::watchdogEnable{false};
+u16                     ArduinoOS::watchdog{0};
 bool                    ArduinoOS::serialEnable{true};
 u32                     ArduinoOS::serialBaud{SERSPEED};
 bool                    ArduinoOS::autoLoad{true};
 bool                    ArduinoOS::autoReset{true};
 bool                    ArduinoOS::locked{false};
 s8                      ArduinoOS::statusLed{STATUSLED};
-s8                      ArduinoOS::resetButton{RESETBUTTON};
+s8                      ArduinoOS::bootButton{BOOTBUTTON};
 String                  ArduinoOS::date{__DATE__ " " __TIME__};
 String                  ArduinoOS::date_temp{date};
 String                  ArduinoOS::hostname{"arduinoOS"};
@@ -44,8 +44,6 @@ void ArduinoOS::begin(){
     };
     //LOOP 10ms
     setInterval([](){
-        //Watchdog
-        wdt_reset();
         //Read Serial
         while(serialEnable && serialInstance->available()){
             while(serialInstance->available())
@@ -59,12 +57,22 @@ void ArduinoOS::begin(){
     //Setup
     isBegin = true;
     if(serialEnable) serialInstance->begin(serialBaud);
-    if(watchdogEnable) wdt_enable(WDTO_4S);
-    #if defined ESP8266 || defined ESP32 
-        EEPROM.begin(EEPROM_SIZE);
+    #if defined(AVR)
+        if(watchdog) wdt_enable(watchdog);
     #endif
-    if(statusLed>=0)   pinMode(statusLed,OUTPUT);
-    if(resetButton>=0) pinMode(resetButton,INPUT_PULLUP);
+    #if defined(ESP8266)
+        EEPROM.begin(EEPROM_SIZE);
+        if(watchdog) wdt_enable(watchdog);
+    #endif
+    #if defined(ESP32)
+        EEPROM.begin(EEPROM_SIZE);
+        if(watchdog){
+            esp_task_wdt_init(watchdog/1000, true); //enable panic so ESP32 restarts
+            esp_task_wdt_add(NULL); //add current thread to WDT watch
+        }
+    #endif
+    if(statusLed>=0)  pinMode(statusLed,OUTPUT);
+    if(bootButton>=0) pinMode(bootButton,INPUT_PULLUP);
     if(autoLoad)  variableLoad();
     o(0x07,false);
     p(textEscClear);
@@ -76,6 +84,15 @@ void ArduinoOS::begin(){
     clearBuffer();
 };
 void ArduinoOS::loop(){
+    #if defined(AVR)
+        if(watchdog) wdt_reset();
+    #endif
+    #if defined(ESP8266)
+        if(watchdog) wdt_reset();
+    #endif
+    #if defined(ESP32)
+       if(watchdog) esp_task_wdt_reset(); 
+    #endif
     taskLoop();
 };
 
@@ -171,11 +188,10 @@ void ArduinoOS::taskManager(){
     loopCounter=0;
     setTimeout([](){
         o("");
-        snprintf(OUT,LONG,"> Loop Freq: %iHz", loopCounter/3);
+        snprintf(OUT,LONG,"> Loop Freq: %luHz", loopCounter/3);
         o(OUT);
         terminalPrefix();
     },3000);
-    
 };
 
 /**
@@ -537,25 +553,28 @@ void ArduinoOS::terminalParseCommand(){
 };
 
 //Interface Methods
-#if not defined ESP8266
-#ifdef __arm__
-// should use uinstd.h to define sbrk but Due causes a conflict
-extern "C" char* sbrk(int incr);
-#else  // __ARM__
-extern char *__brkval;
-#endif  // __arm__
-int ArduinoOS::freeMemory() {
-  char top;
-#ifdef __arm__
-  return &top - reinterpret_cast<char*>(sbrk(0));
-#elif defined(CORE_TEENSY) || (ARDUINO > 103 && ARDUINO != 151)
-  return &top - __brkval;
-#else  // __arm__
-  return __brkval ? &top - __brkval : &top - __malloc_heap_start;
-#endif  // __arm__
-}
+#if defined AVR
+    #ifdef __arm__
+        // should use uinstd.h to define sbrk but Due causes a conflict
+        extern "C" char* sbrk(int incr);
+    #else  // __ARM__
+        extern char *__brkval;
+    #endif  // __arm__
+    int ArduinoOS::freeMemory() {
+        char top;
+        #ifdef __arm__
+            return &top - reinterpret_cast<char*>(sbrk(0));
+        #elif defined(CORE_TEENSY) || (ARDUINO > 103 && ARDUINO != 151)
+            return &top - __brkval;
+        #else  // __arm__
+            return __brkval ? &top - __brkval : &top - __malloc_heap_start;
+        #endif  // __arm__
+    }
 #endif
 #if defined ESP8266
+  int ArduinoOS::freeMemory() { return ESP.getFreeHeap(); };
+#endif
+#if defined ESP32
   int ArduinoOS::freeMemory() { return ESP.getFreeHeap(); };
 #endif
 

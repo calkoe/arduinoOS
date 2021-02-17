@@ -15,9 +15,15 @@
             "files": ["arduinoOS.ino"]
         }
     ],
-    "platforms": ["atmelavr","espressif8266"],
+    "platforms": ["atmelavr","espressif8266","espressif32"],
     "dependencies": {
         "MQTT": "https://github.com/256dpi/arduino-mqtt.git",
-        "NTPClient": "https://github.com/arduino-libraries/NTPClient.git"
+        "NTPClient": "https://github.com/arduino-libraries/NTPClient.git",
+        "ESP8266WiFi":"*",
+        "ESP8266httpUpdate":"*",
+        "ESP8266HTTPClient":"*",
+        "DNSServer":"*",
+        "WiFi":"*",
+        "WiFiUdp":"*"
     }
 }

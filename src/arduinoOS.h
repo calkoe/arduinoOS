@@ -9,6 +9,18 @@
 //  https://github.com/calkoe/arduinoOS
 //
 
+#if defined AVR
+    #include <Arduino.h>
+    #include <avr/wdt.h>
+    #include <EEPROM.h>
+    #define SHORT               16      //Programm Parameter, Parameter Count
+    #define LONG                64      //IO Buffer
+    #define SERSPEED            9600 
+    #define STATUSLED           LED_BUILTIN
+    #define BOOTBUTTON          0
+
+#endif
+
 #if defined ESP8266
     #include <EEPROM.h>
     #include <ESP.h>
@@ -16,17 +28,30 @@
     #define LONG                128     //BufferIn, BufferOut, TerminalHistory
     #define SERSPEED            115200 
     #define STATUSLED           16
-    #define RESETBUTTON         0
+    #define BOOTBUTTON          0
     #define EEPROM_SIZE         1024    //Only for ESP
-#else
-    #include <Arduino.h>
-    #include <avr/wdt.h>
-    #define SHORT               16      //Programm Parameter, Parameter Count
-    #define LONG                64      //IO Buffer
-    #define SERSPEED            9600 
-    #define STATUSLED           LED_BUILTIN
-    #define RESETBUTTON         0
 #endif
+
+#if defined ESP32
+    #include <EEPROM.h>
+    #include <ESP.h>
+    #include <esp_task_wdt.h>
+    #define SHORT               128     //Programm Parameter, Parameter Count
+    #define LONG                128     //BufferIn, BufferOut, TerminalHistory
+    #define SERSPEED            115200 
+    #define STATUSLED           2
+    #define BOOTBUTTON          0
+    #define EEPROM_SIZE         1024    //Only for ESP
+#endif
+
+#define u8  unsigned char
+#define s8  char
+#define u16 unsigned int
+#define s16 int
+#define u32 unsigned long
+#define s32 signed long
+#define u64 unsigned long long
+#define s64 signed long long
 
 //Text
 const char textErrorBegin[] PROGMEM         = "call variableAdd() before begin() !";
@@ -74,7 +99,7 @@ class ArduinoOS{
         struct AOS_TASK {
             u16                 id;
             void                (*function)();
-            u64                timestamp;
+            u64                 timestamp;
             u16                 interval;
             const char*         description;  
             u16                 time;  
@@ -123,8 +148,8 @@ class ArduinoOS{
         static u32              serialBaud;
         static u8               status;
         static s8               statusLed;
-        static s8               resetButton;
-        static bool             watchdogEnable;
+        static s8               bootButton;
+        static u16              watchdog;
         static bool             autoLoad;
         static bool             autoReset;
         static bool             locked;
