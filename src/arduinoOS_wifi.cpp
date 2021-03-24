@@ -5,7 +5,7 @@
 bool        ArduinoOS_wifi::telnet_enable{true};
 bool        ArduinoOS_wifi::ntp_enable{false};
 String      ArduinoOS_wifi::ntp_server{};
-s32         ArduinoOS_wifi::ntp_offset{0};
+s16         ArduinoOS_wifi::ntp_offset{0};
 bool        ArduinoOS_wifi::sta_enable{false};
 String      ArduinoOS_wifi::sta_network{};
 String      ArduinoOS_wifi::sta_password{};
@@ -44,10 +44,10 @@ void ArduinoOS_wifi::begin(){
     //LOOP 10ms
     setInterval([](){
         if(telnet_enable) telnetLoop();
-        if(ArduinoOS::resetButton>=0){
+        if(ArduinoOS::bootButton>=0){
             static bool state = false;
-            if(state != digitalRead(ArduinoOS::resetButton)){
-                state = digitalRead(ArduinoOS::resetButton);
+            if(state != digitalRead(ArduinoOS::bootButton)){
+                state = digitalRead(ArduinoOS::bootButton);
                 if(!state){
                     ap_enable = !ap_enable;
                     variableLoad(true);

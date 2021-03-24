@@ -41,7 +41,7 @@ class ArduinoOS_wifi : public ArduinoOS{
         static bool   telnet_enable;
         static bool   ntp_enable;
         static String ntp_server;
-        static s32    ntp_offset;
+        static s16    ntp_offset;
         static bool   sta_enable;
         static String sta_network;
         static String sta_password;

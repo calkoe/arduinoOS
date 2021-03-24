@@ -21,7 +21,7 @@ class ArduinoOS_mqtt : public ArduinoOS_wifi{
 
         //Methods
         static bool config(u8);
-        static void handle(MQTTClient*, char*, char*, s32);
+        static void handle(MQTTClient*, char*, char*, s16);
         
     protected:
 
@@ -43,7 +43,7 @@ class ArduinoOS_mqtt : public ArduinoOS_wifi{
         static bool         mqtt_connected;
         static bool         mqtt_enable;
         static String       mqtt_server;
-        static s32          mqtt_port;
+        static s16          mqtt_port;
         static bool         mqtt_tls;
         static bool         mqtt_tlsVerify;
         static String       mqtt_clientID;

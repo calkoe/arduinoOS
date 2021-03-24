@@ -8,7 +8,7 @@ WiFiClientSecure*       ArduinoOS_mqtt::netSecure;
 MQTTClient*             ArduinoOS_mqtt::mqtt;
 bool                    ArduinoOS_mqtt::mqtt_enable{false};
 String                  ArduinoOS_mqtt::mqtt_server{};
-s32                     ArduinoOS_mqtt::mqtt_port{1883};
+s16                     ArduinoOS_mqtt::mqtt_port{1883};
 bool                    ArduinoOS_mqtt::mqtt_tls{false};
 bool                    ArduinoOS_mqtt::mqtt_tlsVerify{false};
 String                  ArduinoOS_mqtt::mqtt_user{};
@@ -98,7 +98,7 @@ void ArduinoOS_mqtt::unsubscripe(char* topic){
         }
     }
 };
-void ArduinoOS_mqtt::handle(MQTTClient *client, char* topic, char* payload, s32 payload_length){
+void ArduinoOS_mqtt::handle(MQTTClient *client, char* topic, char* payload, s16 payload_length){
     SUB* t = sub;
     while(t){
         if(!strcmp(t->topic,topic))
