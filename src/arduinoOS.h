@@ -195,5 +195,6 @@ class ArduinoOS{
 
         //TOOLS
         double mapVal(double, int, int, int, int);
+        inline bool sign(double i){return i < 0;};
 
 };

@@ -49,7 +49,7 @@ void ArduinoOS::begin(){
             while(serialInstance->available())
                 charIn(serialInstance->read(),true);
         }
-    },50,"serial");
+    },10,"serial");
     //LOOP 10ms
     setInterval([](){
         eventLoop();
@@ -67,7 +67,7 @@ void ArduinoOS::begin(){
     #if defined(ESP32)
         EEPROM.begin(EEPROM_SIZE);
         if(watchdog){
-            esp_task_wdt_init(watchdog/1000, true); //enable panic so ESP32 restarts
+            esp_task_wdt_init(watchdog, true); //enable panic so ESP32 restarts
             esp_task_wdt_add(NULL); //add current thread to WDT watch
         }
     #endif
@@ -638,6 +638,9 @@ ArduinoOS::ArduinoOS(){
 
     commandAdd("reboot",[](char** param,u8 parCnt){
         #if defined ESP8266
+            ESP.restart();
+        #endif
+        #if defined ESP32
             ESP.restart();
         #endif
         for(int i{0};;i++){o('.',false);delay(333);}
