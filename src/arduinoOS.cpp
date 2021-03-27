@@ -45,15 +45,13 @@ void ArduinoOS::begin(){
     //LOOP 10ms
     setInterval([](){
         //Read Serial
-        while(serialEnable && serialInstance->available()){
-            while(serialInstance->available())
-                charIn(serialInstance->read(),true);
-        }
+        while(serialEnable && serialInstance->available())
+            charIn(serialInstance->read(),true);
     },10,"serial");
-    //LOOP 10ms
+    //LOOP 5ms
     setInterval([](){
         eventLoop();
-    },50,"events");
+    },5,"events");
     //Setup
     isBegin = true;
     if(serialEnable) serialInstance->begin(serialBaud);

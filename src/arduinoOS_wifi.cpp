@@ -34,7 +34,7 @@ void ArduinoOS_wifi::begin(){
     //LOOP 1ms
     setInterval([](){
         yield();
-    },5,"wifiLoop");
+    },1,"wifiLoop");
     //LOOP 10000ms
     setInterval([](){
         if(ntp_enable && ntp_server && connected()){
@@ -55,7 +55,7 @@ void ArduinoOS_wifi::begin(){
                 }
             }
         }
-    },20,"wifiTelnetLoop");
+    },5,"wifiTelnetLoop");
 };
 void ArduinoOS_wifi::loop(){
     ArduinoOS::loop();
@@ -152,11 +152,8 @@ void ArduinoOS_wifi::telnetLoop(){
   //Get Message
   for(u8 i{0}; i < MAX_TELNET_CLIENTS; i++)
     if (TelnetClient[i] && TelnetClient[i].connected())
-        while(TelnetClient[i].available()){
-            while(TelnetClient[i].available())
-                charIn(TelnetClient[i].read(),false);
-            delay(1);
-        };
+        while(TelnetClient[i].available())
+            charIn(TelnetClient[i].read(),false);
 };
 void ArduinoOS_wifi::telnetOut(void* value){
     for(u8 i{0}; i < MAX_TELNET_CLIENTS; i++)

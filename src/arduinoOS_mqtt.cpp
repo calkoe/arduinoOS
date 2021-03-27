@@ -39,7 +39,7 @@ void ArduinoOS_mqtt::begin(){
     //LOOP 12ms
     setInterval([](){
         if(mqtt_enable) mqtt->loop();
-    },20,"mqttLoop");
+    },5,"mqttLoop");
 };
 void ArduinoOS_mqtt::loop(){
     ArduinoOS_wifi::loop();
