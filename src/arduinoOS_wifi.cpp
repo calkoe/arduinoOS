@@ -31,10 +31,6 @@ void ArduinoOS_wifi::begin(){
         if(ap_enable) ArduinoOS::status = 0;
         if(!ap_enable && !sta_enable) ArduinoOS::status = 5;
     },1000,"wifiStatus");
-    //LOOP 1ms
-    setInterval([](){
-        yield();
-    },1,"wifiLoop");
     //LOOP 10000ms
     setInterval([](){
         if(ntp_enable && ntp_server && connected()){

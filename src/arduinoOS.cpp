@@ -168,6 +168,7 @@ void ArduinoOS::taskLoop(){
             i->timestamp = millis();
             i = !i->repeat ? unsetInterval(i->id) : i->aos_task;
         }else i = i->aos_task;
+        yield();
     }
     loopCounter++;
 };
