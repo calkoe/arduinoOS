@@ -655,8 +655,9 @@ ArduinoOS::ArduinoOS(){
         o("🖥  System:");
         snprintf(OUT,LONG,"%-20s : %s","FIRMWARE",firmware.c_str());o(OUT);
         snprintf(OUT,LONG,"%-20s : %s","COMPILED",date.c_str());o(OUT);
-        snprintf(OUT,LONG,"%-20s : %d B","HEAP",freeMemory());o(OUT);
-        snprintf(OUT,LONG,"%-20s : %d B","EERPOM",usedEeprom);o(OUT);
+        snprintf(OUT,LONG,"%-20s : %d B FREE","HEAP",freeMemory());o(OUT);
+        snprintf(OUT,LONG,"%-20s : %d B USED","EERPOM",usedEeprom);o(OUT);
+        snprintf(OUT,LONG,"%-20s : %f H","UPTIME",(double)millis()/1000.0/60.0/60.0);o(OUT);
     },"🖥");
 
     commandAdd("tasks", [](char** param,u8 parCnt){
