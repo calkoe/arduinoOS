@@ -36,10 +36,10 @@ void ArduinoOS_mqtt::begin(){
             };
         }
     },1000,"mqttStatus");
-    //LOOP 1ms
+    //LOOP 5ms
     setInterval([](){
         if(mqtt_enable) mqtt->loop();
-    },1,"mqttLoop");
+    },5,"mqttLoop");
 };
 void ArduinoOS_mqtt::loop(){
     ArduinoOS_wifi::loop();
@@ -52,16 +52,16 @@ bool ArduinoOS_mqtt::config(u8 s){
     if(netSecure)   delete netSecure;
     mqtt = new MQTTClient;
     if(mqtt_enable && mqtt_server){
-        mqtt->setOptions(60, true, 500);
+        mqtt->setOptions(60, true, 2000);
         mqtt->onMessageAdvanced(handle);
         if(mqtt_tls){
             netSecure = new WiFiClientSecure;
-            netSecure->setTimeout(500);
+            netSecure->setTimeout(2000);
             if(!mqtt_tlsVerify) netSecure->setInsecure();
             mqtt->begin(mqtt_server.c_str(),mqtt_port,*netSecure);
         }else{
             net = new WiFiClient;
-            net->setTimeout(500);
+            net->setTimeout(2000);
             mqtt->begin(mqtt_server.c_str(),mqtt_port,*net);
         };
     }
@@ -69,14 +69,17 @@ bool ArduinoOS_mqtt::config(u8 s){
 };
 void ArduinoOS_mqtt::publish(char* topic, char* payload, bool retained, u8 qos){
     if(isBegin) mqtt->publish(topic,payload,retained,qos);
+    yield();
 };
 void ArduinoOS_mqtt::publish(String& topic, String& payload, bool retained, u8 qos){
     if(isBegin) mqtt->publish(topic,payload,retained,qos);
+    yield();
 };
 void ArduinoOS_mqtt::subscripe(char* topic,u8 qos,void (*function)(char*,char*)){
     if(isBegin && mqtt->connected()) mqtt->subscribe(topic,qos);
     SUB* b = new SUB{topic,qos,function,sub};
     sub = b;
+    yield();
 };
 void ArduinoOS_mqtt::unsubscripe(char* topic){
     if(isBegin && mqtt->connected()) mqtt->unsubscribe(topic);
@@ -97,6 +100,7 @@ void ArduinoOS_mqtt::unsubscripe(char* topic){
             t = t->sub;
         }
     }
+    yield();
 };
 void ArduinoOS_mqtt::handle(MQTTClient *client, char* topic, char* payload, s16 payload_length){
     SUB* t = sub;

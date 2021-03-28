@@ -51,7 +51,7 @@ void ArduinoOS_wifi::begin(){
                 }
             }
         }
-    },5,"wifiTelnetLoop");
+    },10,"wifiTelnetLoop");
 };
 void ArduinoOS_wifi::loop(){
     ArduinoOS::loop();

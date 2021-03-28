@@ -99,7 +99,7 @@ class ArduinoOS{
         struct AOS_TASK {
             u16                 id;
             void                (*function)();
-            u64                 timestamp;
+            u32                 timestamp;
             u16                 interval;
             const char*         description;  
             u16                 time;  
