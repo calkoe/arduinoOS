@@ -1,5 +1,6 @@
+#if defined ESP8266 || defined ESP32
+
 #include "arduinoOS_wifi.h"
-#ifdef ESP8266
 
 //Global
 bool        ArduinoOS_wifi::telnet_enable{true};
@@ -60,13 +61,24 @@ void ArduinoOS_wifi::loop(){
 //Methods
 bool ArduinoOS_wifi::config(u8 s){
     if(s == 0){
-        //WiFi
-        ESP.eraseConfig();
-        WiFi.setAutoConnect(true);
-        WiFi.persistent(false); 
-        WiFi.mode(WIFI_STA);
-        WiFi.hostname(hostname); 
-        WiFi.mode(WIFI_OFF);
+
+        #if defined ESP8266
+            ESP.eraseConfig();
+            WiFi.setAutoConnect(true);
+            WiFi.persistent(false); 
+            WiFi.mode(WIFI_STA);
+            WiFi.hostname(hostname); 
+            WiFi.mode(WIFI_OFF);
+        #endif
+
+        #if defined ESP32
+            WiFi.setAutoConnect(true);
+            WiFi.persistent(false); 
+            WiFi.mode(WIFI_STA);
+            WiFi.setHostname((const char*)hostname.c_str()); 
+            WiFi.mode(WIFI_OFF);
+        #endif
+
         //wifi_set_sleep_type(NONE_SLEEP_T); //https://blog.creations.de/?p=149 //Remove ??
     };
 
@@ -78,7 +90,7 @@ bool ArduinoOS_wifi::config(u8 s){
         TelnetClient = new WiFiClient[MAX_TELNET_CLIENTS];
         eventListen("o",telnetOut);
         TelnetServer->begin();
-        TelnetServer->setNoDelay(true);
+        //TelnetServer->setNoDelay(true);
     }
 
     //NTP
@@ -100,15 +112,15 @@ bool ArduinoOS_wifi::config(u8 s){
             wifiDns.fromString(sta_dns);
             wifiSubnet.fromString(sta_subnet);
             wifiGateway.fromString(sta_gateway);
-            WiFi.config(wifiIp,wifiDns,wifiSubnet,wifiGateway);
+            WiFi.config(wifiIp,wifiGateway,wifiSubnet,wifiDns);
         }
-        WiFi.begin(sta_network,sta_password);
+        WiFi.begin((const char*)sta_network.c_str(),(const char*)sta_password.c_str());
     };
 
     //AP
     if(ap_enable && ap_network && !WiFi.softAPgetStationNum()){
         WiFi.softAPConfig(IPAddress(192, 168, 100, 1), IPAddress(192, 168, 100, 1), IPAddress(255, 255, 255, 0));
-        WiFi.softAP(hostname,ap_password);
+        WiFi.softAP((const char*)hostname.c_str(),(const char*)ap_password.c_str());
     };
 
     //ELSE
@@ -119,7 +131,7 @@ bool ArduinoOS_wifi::config(u8 s){
 bool ArduinoOS_wifi::connected(){
     return (WiFi.status() == WL_CONNECTED && WiFi.localIP().toString() != "(IP unset)" && WiFi.localIP().toString() != "0.0.0.0");
 }
-inline s32 ArduinoOS_wifi::calcRSSI(s32 r){
+inline s16 ArduinoOS_wifi::calcRSSI(s32 r){
     return min(max(2 * (r + 100.0), 0.0), 100.0);
 };
 
@@ -214,39 +226,72 @@ ArduinoOS_wifi::ArduinoOS_wifi():ArduinoOS(){
         snprintf(OUT,LONG,"%-20s : %d","AP Stations",WiFi.softAPgetStationNum());o(OUT);
         snprintf(OUT,LONG,"%-20s : %s","NTP Time",timeClient.getFormattedTime().c_str());o(OUT);
     },  "📶 Shows System / Wifi status");
-
-    commandAdd("wifiFirmware",[](char** param,u8 parCnt){
-        if(parCnt==2){
-            String url = param[1];
-            snprintf(OUT,LONG,"[HTTP UPDATE] Requesting: %s",url.c_str());o(OUT);
-            ESPhttpUpdate.setLedPin(STATUSLED,0);
-            ESPhttpUpdate.onProgress([](u32 p,u32 t){
-                snprintf(OUT,LONG,"[HTTP UPDATE] Downloading: %u of %u Bytes",p,t);o(OUT);
-            });
-            t_httpUpdate_return ret;
-            if(url.startsWith("https")){
-                WiFiClientSecure net;
-                net.setInsecure();
-                ret = ESPhttpUpdate.update(net, param[1], firmware);
+    
+    #if defined ESP8266
+        commandAdd("wifiFirmware",[](char** param,u8 parCnt){
+            if(parCnt==2){
+                String url = param[1];
+                snprintf(OUT,LONG,"[HTTP UPDATE] Requesting: %s",url.c_str());o(OUT);
+                ESPhttpUpdate.setLedPin(STATUSLED,0);
+                ESPhttpUpdate.onProgress([](u32 p,u32 t){
+                    snprintf(OUT,LONG,"[HTTP UPDATE] Downloading: %u of %u Bytes",p,t);o(OUT);
+                });
+                t_httpUpdate_return ret;
+                if(url.startsWith("https")){
+                    WiFiClientSecure net;
+                        net.setInsecure();
+                    ret = ESPhttpUpdate.update(net, param[1], firmware);
+                }else{
+                    WiFiClient net;
+                    ret = ESPhttpUpdate.update(net, param[1], firmware);
+                } 
+                switch(ret) {
+                    case HTTP_UPDATE_FAILED:
+                        snprintf(OUT,LONG,"[HTTP UPDATE] Error (%d): %s", ESPhttpUpdate.getLastError(), ESPhttpUpdate.getLastErrorString().c_str());o(OUT);
+                        break;
+                    case HTTP_UPDATE_NO_UPDATES:
+                        o("[HTTP UPDATE] No Update Aviable.");
+                        break;
+                    case HTTP_UPDATE_OK:
+                        o("[HTTP UPDATE] Update ok.");
+                        break;
+                }
             }else{
-                WiFiClient net;
-                ret = ESPhttpUpdate.update(net, param[1], firmware);
-            } 
-            switch(ret) {
-                case HTTP_UPDATE_FAILED:
-                    snprintf(OUT,LONG,"[HTTP UPDATE] Error (%d): %s", ESPhttpUpdate.getLastError(), ESPhttpUpdate.getLastErrorString().c_str());o(OUT);
-                    break;
-                case HTTP_UPDATE_NO_UPDATES:
-                    o("[HTTP UPDATE] No Update Aviable.");
-                    break;
-                case HTTP_UPDATE_OK:
-                    o("[HTTP UPDATE] Update ok.");
-                    break;
+                commandMan("firmware");
             }
-        }else{
-            commandMan("firmware");
-        }
-    },"📶 [url] | load and install new firmware from URL (http or https)");
+        },"📶 [url] | load and install new firmware from URL (http or https)");
+     #endif
+    
+    #if defined ESP32
+        commandAdd("wifiFirmware",[](char** param,u8 parCnt){
+            if(parCnt==2){
+                String url = param[1];
+                snprintf(OUT,LONG,"[HTTP UPDATE] Requesting: %s",url.c_str());o(OUT);
+                httpUpdate.setLedPin(STATUSLED,0);
+                HTTPUpdateResult ret;
+                if(url.startsWith("https")){
+                    WiFiClientSecure net;
+                    ret = httpUpdate.update(net, param[1], firmware);
+                }else{
+                    WiFiClient net;
+                    ret = httpUpdate.update(net, param[1], firmware);
+                } 
+                switch(ret) {
+                    case HTTP_UPDATE_FAILED:
+                        snprintf(OUT,LONG,"[HTTP UPDATE] Error (%d): %s", httpUpdate.getLastError(), httpUpdate.getLastErrorString().c_str());o(OUT);
+                        break;
+                    case HTTP_UPDATE_NO_UPDATES:
+                        o("[HTTP UPDATE] No Update Aviable.");
+                        break;
+                    case HTTP_UPDATE_OK:
+                        o("[HTTP UPDATE] Update ok.");
+                        break;
+                }
+            }else{
+                commandMan("firmware");
+            }
+        },"📶 [url] | load and install new firmware from URL (http or https)");
+     #endif
 
     commandAdd("wifiScan",[](char** param,u8 parCnt){
         o("Scaning for Networks...");
@@ -255,12 +300,14 @@ ArduinoOS_wifi::ArduinoOS_wifi():ArduinoOS(){
             for (u8 i = 0; i < n; i++){
                 const char* e;
                 switch(WiFi.encryptionType(i)){
-                    case AUTH_OPEN:         e = "AUTH_OPEN";break;
-                    case AUTH_WEP:          e = "AUTH_WEP";break;
-                    case AUTH_WPA_PSK:      e = "AUTH_WPA_PSK";break;
-                    case AUTH_WPA2_PSK:     e = "AUTH_WPA2_PSK";break;
-                    case AUTH_WPA_WPA2_PSK: e = "AUTH_WPA_WPA2_PSK";break;
-                    default:                e = "UNKOWN";
+                    case 0: e = "OPEN";break;
+                    case 1: e = "WEP";break;
+                    case 2: e = "WPA_PSK";break;
+                    case 3: e = "WPA2_PSK";break;
+                    case 4: e = "WPA_WPA2_PSK";break;
+                    case 5: e = "WPA2_ENTERPRISE";break;
+                    case 6: e = "AUTH_MAX";break;
+                    default:e = "UNKOWN";
                 }
                 snprintf(OUT,LONG,"%-20s : %d dBm (%d%%) (%s)",WiFi.SSID(i).c_str(),WiFi.RSSI(i), calcRSSI(WiFi.RSSI(i)),e);o(OUT);
             }

@@ -82,10 +82,7 @@ void ArduinoOS::begin(){
     clearBuffer();
 };
 void ArduinoOS::loop(){
-    #if defined(AVR)
-        if(watchdog) wdt_reset();
-    #endif
-    #if defined(ESP8266)
+    #if defined AVR || defined ESP8266
         if(watchdog) wdt_reset();
     #endif
     #if defined(ESP32)

@@ -1,5 +1,6 @@
+#if defined ESP8266 || defined ESP32
+
 #include "arduinoOS_mqtt.h"
-#ifdef ESP8266
 
 bool                    ArduinoOS_mqtt::mqtt_connected{false};
 ArduinoOS_mqtt::SUB*    ArduinoOS_mqtt::sub{nullptr};
@@ -11,6 +12,9 @@ String                  ArduinoOS_mqtt::mqtt_server{};
 s16                     ArduinoOS_mqtt::mqtt_port{1883};
 bool                    ArduinoOS_mqtt::mqtt_tls{false};
 bool                    ArduinoOS_mqtt::mqtt_tlsVerify{false};
+String                  ArduinoOS_mqtt::mqtt_CACert;
+String                  ArduinoOS_mqtt::mqtt_certificate;
+String                  ArduinoOS_mqtt::mqtt_privateKey;
 String                  ArduinoOS_mqtt::mqtt_user{};
 String                  ArduinoOS_mqtt::mqtt_password{};
 
@@ -57,7 +61,12 @@ bool ArduinoOS_mqtt::config(u8 s){
         if(mqtt_tls){
             netSecure = new WiFiClientSecure;
             netSecure->setTimeout(2000);
-            if(!mqtt_tlsVerify) netSecure->setInsecure();
+            netSecure->setCACert(mqtt_CACert.c_str());
+            netSecure->setCertificate(mqtt_certificate.c_str());
+            netSecure->setPrivateKey(mqtt_privateKey.c_str());
+            #if defined ESP8266
+                if(!mqtt_tlsVerify) netSecure->setInsecure();
+            #endif
             mqtt->begin(mqtt_server.c_str(),mqtt_port,*netSecure);
         }else{
             net = new WiFiClient;
@@ -117,15 +126,17 @@ bool ArduinoOS_mqtt::connected(){
 
 
 ArduinoOS_mqtt::ArduinoOS_mqtt():ArduinoOS_wifi(){
-    variableAdd("mqtt/enable",    mqtt_enable    ,           "📡 mqtt_enable MQTT");
-    variableAdd("mqtt/server",    mqtt_server    ,           "📡 MQTT mqtt_server IP or Name");
-    variableAdd("mqtt/port",      mqtt_port      ,           "📡 MQTT mqtt_server Port");
-    variableAdd("mqtt/tls",       mqtt_tls       ,           "📡 Use TLS");
-    variableAdd("mqtt/tlsVerify", mqtt_tlsVerify ,           "📡 Verify TLS Certificates");
-    variableAdd("mqtt/user",      mqtt_user      ,           "📡 Username");
-    variableAdd("mqtt/password",  mqtt_password  ,           "📡 Password");
-
-    commandAdd("mqttStatus",          [](char** param,u8 parCnt){
+    variableAdd("mqtt/enable",      mqtt_enable         ,           "📡 mqtt_enable MQTT");
+    variableAdd("mqtt/server",      mqtt_server         ,           "📡 MQTT mqtt_server IP or Name");
+    variableAdd("mqtt/port",        mqtt_port           ,           "📡 MQTT mqtt_server Port");
+    variableAdd("mqtt/tls",         mqtt_tls            ,           "📡 Use TLS");
+    variableAdd("mqtt/tlsVerify",   mqtt_tlsVerify      ,           "📡 Verify TLS Certificates");
+    variableAdd("mqtt/CACert",      mqtt_CACert         ,           "📡 TLS CACert");
+    variableAdd("mqtt/certificate", mqtt_certificate    ,           "📡 TLS Certificate");
+    variableAdd("mqtt/privateKey",  mqtt_privateKey     ,           "📡 TLS privateKey");
+    variableAdd("mqtt/user",        mqtt_user           ,           "📡 Username");
+    variableAdd("mqtt/password",    mqtt_password       ,           "📡 Password");
+    commandAdd("mqttStatus",[](char** param,u8 parCnt){
         o("");o("📡 MQTT:");
         const char* m{""};
         switch(mqtt->lastError()){
@@ -161,7 +172,12 @@ ArduinoOS_mqtt::ArduinoOS_mqtt():ArduinoOS_wifi(){
         snprintf(OUT,LONG,"%-20s : %s","Return Code",r);o(OUT);
         if(netSecure){
             char s[100];
-            netSecure->getLastSSLError(s,100);
+            #if defined ESP8266 
+                netSecure->getLastSSLError(s,100); 
+            #endif
+            #if defined ESP32
+                netSecure->lastError(s,100); 
+            #endif
             snprintf(OUT,LONG,"%-20s : %s","Last SSL Error",s);o(OUT);
         }
     },"📡 Shows System / Wifi / MQTT status",false);

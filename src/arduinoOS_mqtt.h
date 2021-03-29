@@ -1,5 +1,5 @@
 #pragma once
-#ifdef ESP8266
+#if defined ESP8266 || defined ESP32
 
 #include "arduinoOS_wifi.h"
 #include <MQTT.h>
@@ -46,6 +46,9 @@ class ArduinoOS_mqtt : public ArduinoOS_wifi{
         static s16          mqtt_port;
         static bool         mqtt_tls;
         static bool         mqtt_tlsVerify;
+        static String       mqtt_CACert;
+        static String       mqtt_certificate;
+        static String       mqtt_privateKey;
         static String       mqtt_clientID;
         static String       mqtt_user;
         static String       mqtt_password;

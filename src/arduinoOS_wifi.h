@@ -1,9 +1,20 @@
 #pragma once
-#ifdef ESP8266
+#if defined ESP8266 || defined ESP32
+
+#if defined ESP8266
+    #include <ESP8266WiFi.h> 
+    #include <ESP8266httpUpdate.h>
+#endif
+
+#if defined ESP32
+    #include <WiFi.h> 
+    #include <WiFiClient.h> 
+    #include <WiFiClientSecure.h> 
+    #include <HTTPUpdate.h>
+    #include <Update.h>
+#endif
 
 #include "arduinoOS.h"
-#include <ESP8266WiFi.h> 
-#include <ESP8266httpUpdate.h>
 #include <WiFiUdp.h>
 #include <NTPClient.h>
 #include <DNSServer.h>
@@ -16,7 +27,7 @@ class ArduinoOS_wifi : public ArduinoOS{
 
         //Methods
         static bool config(u8);
-        static s32  calcRSSI(s32);
+        static s16  calcRSSI(s32);
 
         //NTP
         static WiFiUDP   wifiUDP;
