@@ -20,9 +20,11 @@ class ArduinoOS_mqtt : public ArduinoOS_wifi{
         static SUB* sub;
 
         //Methods
-        static void connect(bool);
+        static void configMqtt();
         static void handle(MQTTClient*, char*, char*, s16);
         static void daemon();
+
+        static bool retry;
                 
     protected:
 
@@ -39,6 +41,7 @@ class ArduinoOS_mqtt : public ArduinoOS_wifi{
         static void publish(String&, String&, bool = false, u8 = 0);
         static void subscripe(char*,u8,void (*function)(char*,char*));
         static void unsubscripe(char*);
+        static void disconnect();
 
         //API
         static bool         mqtt_connected;
@@ -53,6 +56,7 @@ class ArduinoOS_mqtt : public ArduinoOS_wifi{
         static String       mqtt_clientID;
         static String       mqtt_user;
         static String       mqtt_password;
+        static u16          mqtt_retryIntervall;
         static bool         connected();
 
 

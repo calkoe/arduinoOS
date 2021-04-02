@@ -48,24 +48,22 @@ void ArduinoOS_wifi::loop(){
 
 void ArduinoOS_wifi::daemon(){
     //Status
-    if(sta_enable && (ArduinoOS::status == 0 || ArduinoOS::status == 1) && connected()){
+    if((ArduinoOS::status == 0 || ArduinoOS::status == 1) && connected()){
         ArduinoOS::status = 5;
-        eventEmit("wifiConnected",NULL);
     } 
-    if(sta_enable && !connected()){
+    if(!connected()){
         ArduinoOS::status = 1;
-        eventEmit("wifiDisconnected",NULL);
     } 
     if(ap_enable) ArduinoOS::status = 0;
     if(!ap_enable && !sta_enable) ArduinoOS::status = 5;
 
     //NTP
-    if(timeClientUDP && timeClient && ntp_enable && connected()){
+    if(timeClient && connected()){
         timeClient->update();
     };
 
     //Telnet
-    if(TelnetServer && telnet_enable){
+    if(TelnetServer && connected()){
         // Cleanup disconnected session
         for(u8 i{0}; i < MAX_TELNET_CLIENTS; i++)
             if (TelnetClient[i] && !TelnetClient[i].connected())
@@ -134,8 +132,17 @@ bool ArduinoOS_wifi::config(u8 s){
     WiFi.mode(WIFI_OFF);
 
     //Telnet
-    if(TelnetServer) delete TelnetServer;
-    if(TelnetClient) delete[] TelnetClient;
+    if(TelnetServer){
+        TelnetServer->stop();
+        delete TelnetServer;
+        TelnetServer = nullptr;
+    } 
+    if(TelnetClient){
+        for(u8 i{0}; i < MAX_TELNET_CLIENTS; i++)  
+            TelnetClient[i].stopAll();  
+        delete[] TelnetClient;    
+        TelnetClient = nullptr;  
+    } 
     if(telnet_enable){
         TelnetServer = new WiFiServer(23);
         TelnetClient = new WiFiClient[MAX_TELNET_CLIENTS];
@@ -146,8 +153,16 @@ bool ArduinoOS_wifi::config(u8 s){
     }
 
     //NTP
-    if(timeClientUDP)   delete timeClientUDP;
-    if(timeClient)      delete timeClient;
+    if(timeClientUDP){
+        timeClientUDP->stop();
+        delete timeClientUDP;
+        timeClientUDP = nullptr;
+    }   
+    if(timeClient){
+        timeClient->end();
+        delete timeClient;
+        timeClient = nullptr;
+    }      
     if(ntp_enable && ntp_server){
         timeClientUDP = new WiFiUDP;
         timeClientUDP->setTimeout(5000);
