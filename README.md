@@ -8,7 +8,9 @@
 * Enables access to application-parameter and application-functions
 * Robust design with no Heap-Fragmentation
 * Integrated Eventmanager + Timer
-* Wifi + Telnet + Mqtt + OTA Features (ESP8266 only)
+* Wifi + Telnet + Mqtt + OTA Features
+* ESP32 RTOS Wifi/Telnet/NTP/MQTT in seperate Threads
+* Stable MQTT-TLS Support on ESP8266 and ESP32
 * Small AVR footprint (<1k Bytes of SRAM)
 
 **Serial CLI: (Baud 9600 on AVR | 112500 on ESP8266)**
@@ -257,7 +259,7 @@ void loop()
 - [x] Allow MQTT-Config on ESP8266 (TLS Supported)
 - [x] Allow NTP-Config on ESP8266
 - [x] HTTP OTA Update capability on ESP8266
-- [ ] Add ESP32 Support
+- [x] Add ESP32 Support
   
 <br/><br/>
 **Contact:**
