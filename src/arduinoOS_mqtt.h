@@ -19,11 +19,13 @@ class ArduinoOS_mqtt : public ArduinoOS_wifi{
         };
         static SUB* sub;
         static bool retry;
+        #if defined ESP32 
+            static SemaphoreHandle_t xBinarySemaphore;
+        #endif
 
         //Methods
-        static void configMqtt();
         static void handle(MQTTClient*, char*, char*, s16);
-        static void daemon();
+        static void mqtt_daemon();
                 
     protected:
 
@@ -33,6 +35,8 @@ class ArduinoOS_mqtt : public ArduinoOS_wifi{
         ArduinoOS_mqtt();
         static void begin();
         static void loop();
+        static void mqtt_config();
+
 
         //API MQTT
         static MQTTClient*  mqtt;
@@ -57,6 +61,8 @@ class ArduinoOS_mqtt : public ArduinoOS_wifi{
         static String       mqtt_password;
         static u16          mqtt_retryIntervall;
         static bool         connected();
+
+
 
 
 };

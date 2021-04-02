@@ -26,7 +26,6 @@ class ArduinoOS_wifi : public ArduinoOS{
     private:
 
         //Methods
-        static bool config(u8);
         static s16  calcRSSI(s32);
 
         //NTP
@@ -37,8 +36,11 @@ class ArduinoOS_wifi : public ArduinoOS{
         static void telnetOut(void*);
         static WiFiServer* TelnetServer;
         static WiFiClient* TelnetClient;
+        #if defined ESP32 
+            static SemaphoreHandle_t xBinarySemaphore;
+        #endif
 
-        static void daemon();
+        static void wifi_daemon();
 
     protected:
 
@@ -48,6 +50,7 @@ class ArduinoOS_wifi : public ArduinoOS{
         ArduinoOS_wifi();
         static void begin();
         static void loop();
+        static bool wifi_config(u8);
 
         //API
         static bool   telnet_enable;

@@ -21,24 +21,29 @@ WiFiUDP*    ArduinoOS_wifi::timeClientUDP{nullptr};
 NTPClient*  ArduinoOS_wifi::timeClient{nullptr};
 WiFiServer* ArduinoOS_wifi::TelnetServer{nullptr};
 WiFiClient* ArduinoOS_wifi::TelnetClient{nullptr};
+#if defined ESP32 
+      SemaphoreHandle_t ArduinoOS_wifi::xBinarySemaphore;
+#endif
 
 void ArduinoOS_wifi::begin(){
     ArduinoOS::begin();
-    config(0);
+    wifi_config(0);
     eventListen("o",telnetOut);
     // DAEMON 5ms
     #if defined ESP8266
         setInterval([](){
-            daemon();
-        },5,"wifiDaemon");
+            wifi_daemon();
+        },5,"wifi_daemon");
     #endif
     #if defined ESP32 
         xTaskCreatePinnedToCore([](void* arg){
             while(true){
-                ArduinoOS_wifi::daemon();
+                xSemaphoreTake( xBinarySemaphore, portMAX_DELAY );
+                ArduinoOS_wifi::wifi_daemon();
+                xSemaphoreGive( xBinarySemaphore );
                 vTaskDelay(5);
             }
-        }, "wifiDaemon", 4096, NULL, 2, NULL, 1);
+        }, "wifi_daemon", 4096, NULL, 2, NULL, 1);
     #endif
 };
 
@@ -46,7 +51,7 @@ void ArduinoOS_wifi::loop(){
     ArduinoOS::loop();
 };
 
-void ArduinoOS_wifi::daemon(){
+void ArduinoOS_wifi::wifi_daemon(){
     //Status
     if((ArduinoOS::status == 0 || ArduinoOS::status == 1) && connected()){
         ArduinoOS::status = 5;
@@ -99,14 +104,14 @@ void ArduinoOS_wifi::daemon(){
             if(!state){
                 ap_enable = !ap_enable;
                 variableLoad(true);
-                config(1);
+                wifi_config(1);
             }
         }
     }
 };
 
 //Methods
-bool ArduinoOS_wifi::config(u8 s){
+bool ArduinoOS_wifi::wifi_config(u8 s){
     if(s == 0){
 
         WiFi.setAutoConnect(true);
@@ -162,7 +167,7 @@ bool ArduinoOS_wifi::config(u8 s){
         timeClient->end();
         delete timeClient;
         timeClient = nullptr;
-    }      
+    }     
     if(ntp_enable && ntp_server){
         timeClientUDP = new WiFiUDP;
         timeClientUDP->setTimeout(5000);
@@ -216,6 +221,11 @@ void ArduinoOS_wifi::telnetOut(void* value){
 
 //Interface Methods
 ArduinoOS_wifi::ArduinoOS_wifi():ArduinoOS(){
+
+    #if defined ESP32 
+        xBinarySemaphore = xSemaphoreCreateBinary();
+        xSemaphoreGive( xBinarySemaphore );
+    #endif
 
     variableAdd("wifi/enable",       sta_enable,        "📶 Enable WiFi STA-Mode");
     variableAdd("wifi/network",      sta_network,       "📶 Network SSID");
@@ -361,6 +371,10 @@ ArduinoOS_wifi::ArduinoOS_wifi():ArduinoOS(){
     },    "📶 Scans for nearby networks");
 
     commandAdd("wifiConnect",[](char** param,u8 parCnt){
+        #if defined ESP32 
+            xSemaphoreTake( xBinarySemaphore, portMAX_DELAY );
+        #endif
+
         if(parCnt>=2){
                 snprintf(OUT,LONG,"Set  wifi/enabled: %s","true");o(OUT);
                 sta_enable  = true;
@@ -373,7 +387,12 @@ ArduinoOS_wifi::ArduinoOS_wifi():ArduinoOS(){
         };
         variableLoad(true);
         o("DONE! ✅ > Type 'wifiStatus' to check status");
-        config(1);
+        wifi_config(1);
+
+        #if defined ESP32 
+            xSemaphoreGive( xBinarySemaphore );
+        #endif
+
     }, "📶 [network] [password] | apply network settings and connect to configured network",false);
 
     commandAdd("wifiDns",[](char** param,u8 parCnt){

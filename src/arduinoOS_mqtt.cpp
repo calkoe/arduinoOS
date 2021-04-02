@@ -19,9 +19,8 @@ String                  ArduinoOS_mqtt::mqtt_privateKey;
 String                  ArduinoOS_mqtt::mqtt_user{};
 String                  ArduinoOS_mqtt::mqtt_password{};
 u16                     ArduinoOS_mqtt::mqtt_retryIntervall{5000};
-
 #if defined ESP32 
-    SemaphoreHandle_t xBinarySemaphore;
+      SemaphoreHandle_t ArduinoOS_mqtt::xBinarySemaphore;
 #endif
 
 void ArduinoOS_mqtt::begin(){
@@ -29,18 +28,18 @@ void ArduinoOS_mqtt::begin(){
     // DAEMON 5ms
     #if defined ESP8266
         setInterval([](){
-            daemon();
-        },5,"mqttDaemon");
+            mqtt_daemon();
+        },5,"mqtt_daemon");
     #endif
     #if defined ESP32 
         xTaskCreatePinnedToCore([](void* arg){
             while(true){
                 xSemaphoreTake( xBinarySemaphore, portMAX_DELAY );
-                ArduinoOS_mqtt::daemon();
+                ArduinoOS_mqtt::mqtt_daemon();
                 xSemaphoreGive( xBinarySemaphore );
                 vTaskDelay(5);
             }
-        }, "mqttDaemon", 4096, NULL, 1, NULL, 1);
+        }, "mqtt_daemon", 4096, NULL, 1, NULL, 1);
     #endif
 };
 
@@ -48,7 +47,7 @@ void ArduinoOS_mqtt::loop(){
     ArduinoOS_wifi::loop();
 };
 
-void ArduinoOS_mqtt::daemon(){
+void ArduinoOS_mqtt::mqtt_daemon(){
     if(mqtt){
         if(mqtt_connected){
             if(!mqtt->connected()){
@@ -65,16 +64,16 @@ void ArduinoOS_mqtt::daemon(){
                     t = t->sub;
                 }
             }
-            configMqtt();
+            mqtt_config();
         }
         mqtt->loop();
     }else{
-        configMqtt();
+        mqtt_config();
     }
 };
 
 //Methods
-void ArduinoOS_mqtt::configMqtt(){
+void ArduinoOS_mqtt::mqtt_config(){
     if(retry){
         if(mqtt){
             mqtt->disconnect();
@@ -163,8 +162,8 @@ void ArduinoOS_mqtt::disconnect(){
 ArduinoOS_mqtt::ArduinoOS_mqtt():ArduinoOS_wifi(){
 
     #if defined ESP32 
-    xBinarySemaphore = xSemaphoreCreateBinary();
-    xSemaphoreGive( xBinarySemaphore );
+        xBinarySemaphore = xSemaphoreCreateBinary();
+        xSemaphoreGive( xBinarySemaphore );
     #endif
 
     variableAdd("mqtt/enable",      mqtt_enable         ,           "📡 mqtt_enable MQTT");
@@ -234,7 +233,7 @@ ArduinoOS_mqtt::ArduinoOS_mqtt():ArduinoOS_wifi(){
 
         if(parCnt>=2){
                 snprintf(OUT,LONG,"Set  mqtt/enable: %s","true");o(OUT);
-                variableSet("mqtt/enabled",(char*)"1");
+                variableSet("mqtt/enable",(char*)"1");
                 snprintf(OUT,LONG,"Set  mqtt/server: %s",param[1]);o(OUT);
                 variableSet("mqtt/server",param[1]);
         };
