@@ -17,70 +17,121 @@ String      ArduinoOS_wifi::sta_dns{"0.0.0.0"};
 bool        ArduinoOS_wifi::ap_enable{false};
 String      ArduinoOS_wifi::ap_network{};
 String      ArduinoOS_wifi::ap_password{};
-WiFiUDP     ArduinoOS_wifi::wifiUDP;
-NTPClient   ArduinoOS_wifi::timeClient{ArduinoOS_wifi::wifiUDP};
-WiFiServer* ArduinoOS_wifi::TelnetServer;
-WiFiClient* ArduinoOS_wifi::TelnetClient;
+WiFiUDP*    ArduinoOS_wifi::timeClientUDP{nullptr};
+NTPClient*  ArduinoOS_wifi::timeClient{nullptr};
+WiFiServer* ArduinoOS_wifi::TelnetServer{nullptr};
+WiFiClient* ArduinoOS_wifi::TelnetClient{nullptr};
 
 void ArduinoOS_wifi::begin(){
     ArduinoOS::begin();
     config(0);
-    //LOOP 1000ms
-    setInterval([](){
-        if(sta_enable && (ArduinoOS::status == 0 || ArduinoOS::status == 1) && connected())  ArduinoOS::status = 5;
-        if(sta_enable && !connected()) ArduinoOS::status = 1;
-        if(ap_enable) ArduinoOS::status = 0;
-        if(!ap_enable && !sta_enable) ArduinoOS::status = 5;
-    },1000,"wifiStatus");
-    //LOOP 10000ms
-    setInterval([](){
-        if(ntp_enable && ntp_server && connected()){
-            timeClient.update();
-        };
-    },10000,"wifiNtpLoop");
-    //LOOP 10ms
-    setInterval([](){
-        if(telnet_enable) telnetLoop();
-        if(ArduinoOS::bootButton>=0){
-            static bool state = false;
-            if(state != digitalRead(ArduinoOS::bootButton)){
-                state = digitalRead(ArduinoOS::bootButton);
-                if(!state){
-                    ap_enable = !ap_enable;
-                    variableLoad(true);
-                    config(1);
-                }
+    eventListen("o",telnetOut);
+    // DAEMON 5ms
+    #if defined ESP8266
+        setInterval([](){
+            daemon();
+        },5,"wifiDaemon");
+    #endif
+    #if defined ESP32 
+        xTaskCreatePinnedToCore([](void* arg){
+            while(true){
+                ArduinoOS_wifi::daemon();
+                vTaskDelay(5);
             }
-        }
-    },10,"wifiTelnetLoop");
+        }, "wifiDaemon", 4096, NULL, 2, NULL, 1);
+    #endif
 };
+
 void ArduinoOS_wifi::loop(){
     ArduinoOS::loop();
+};
+
+void ArduinoOS_wifi::daemon(){
+    //Status
+    if(sta_enable && (ArduinoOS::status == 0 || ArduinoOS::status == 1) && connected()){
+        ArduinoOS::status = 5;
+        eventEmit("wifiConnected",NULL);
+    } 
+    if(sta_enable && !connected()){
+        ArduinoOS::status = 1;
+        eventEmit("wifiDisconnected",NULL);
+    } 
+    if(ap_enable) ArduinoOS::status = 0;
+    if(!ap_enable && !sta_enable) ArduinoOS::status = 5;
+
+    //NTP
+    if(timeClientUDP && timeClient && ntp_enable && connected()){
+        timeClient->update();
+    };
+
+    //Telnet
+    if(TelnetServer && telnet_enable){
+        // Cleanup disconnected session
+        for(u8 i{0}; i < MAX_TELNET_CLIENTS; i++)
+            if (TelnetClient[i] && !TelnetClient[i].connected())
+                TelnetClient[i].stop();
+        // Check new client connections
+        if (TelnetServer->hasClient()){
+            for(u8 i{0}; i < MAX_TELNET_CLIENTS; i++){
+            if (!TelnetClient[i]){
+                TelnetClient[i] = TelnetServer->available(); 
+                TelnetClient[i].flush();
+                o(0x07,false);
+                p(textEscClear);
+                p(textWelcome);
+                commandList();           
+                terminalPrefix();
+                clearBuffer();
+                break;
+            };
+            };
+        };
+        //Get Message
+        for(u8 i{0}; i < MAX_TELNET_CLIENTS; i++)
+            if (TelnetClient[i] && TelnetClient[i].connected())
+                while(TelnetClient[i].available())
+                    charIn(TelnetClient[i].read(),false);
+    }  
+
+    //Button
+    if(ArduinoOS::bootButton>=0){
+        static bool state = false;
+        if(state != digitalRead(ArduinoOS::bootButton)){
+            state = digitalRead(ArduinoOS::bootButton);
+            if(!state){
+                ap_enable = !ap_enable;
+                variableLoad(true);
+                config(1);
+            }
+        }
+    }
 };
 
 //Methods
 bool ArduinoOS_wifi::config(u8 s){
     if(s == 0){
 
+        WiFi.setAutoConnect(true);
+        WiFi.persistent(false); 
+        WiFi.mode(WIFI_STA);
+
         #if defined ESP8266
             ESP.eraseConfig();
-            WiFi.setAutoConnect(true);
-            WiFi.persistent(false); 
-            WiFi.mode(WIFI_STA);
             WiFi.hostname(hostname); 
-            WiFi.mode(WIFI_OFF);
+            WiFi.setSleepMode(WIFI_NONE_SLEEP,0);
+            WiFi.setOutputPower(20.5);
         #endif
 
         #if defined ESP32
-            WiFi.setAutoConnect(true);
-            WiFi.persistent(false); 
-            WiFi.mode(WIFI_STA);
             WiFi.setHostname((const char*)hostname.c_str()); 
-            WiFi.mode(WIFI_OFF);
+            WiFi.setSleep(true);
+            WiFi.setTxPower(WIFI_POWER_19_5dBm);
         #endif
 
-        //wifi_set_sleep_type(NONE_SLEEP_T); //https://blog.creations.de/?p=149 //Remove ??
+
     };
+
+    WiFi.mode(WIFI_OFF);
 
     //Telnet
     if(TelnetServer) delete TelnetServer;
@@ -88,17 +139,23 @@ bool ArduinoOS_wifi::config(u8 s){
     if(telnet_enable){
         TelnetServer = new WiFiServer(23);
         TelnetClient = new WiFiClient[MAX_TELNET_CLIENTS];
-        eventListen("o",telnetOut);
+        for(u8 i{0}; i < MAX_TELNET_CLIENTS; i++)
+            TelnetClient[i].setTimeout(5000);       
         TelnetServer->begin();
-        //TelnetServer->setNoDelay(true);
+        TelnetServer->setNoDelay(true);
     }
 
     //NTP
+    if(timeClientUDP)   delete timeClientUDP;
+    if(timeClient)      delete timeClient;
     if(ntp_enable && ntp_server){
-        timeClient.setPoolServerName(ntp_server.c_str());
-        timeClient.setTimeOffset(60 * 60 * ntp_offset);
-        timeClient.setUpdateInterval(1000 * 60 * 60);
-        timeClient.begin();
+        timeClientUDP = new WiFiUDP;
+        timeClientUDP->setTimeout(5000);
+        timeClient = new NTPClient(*timeClientUDP);
+        timeClient->setPoolServerName(ntp_server.c_str());
+        timeClient->setTimeOffset(60 * 60 * ntp_offset);
+        timeClient->setUpdateInterval(1000 * 60 * 10);  // 10 Min
+        timeClient->begin();
     }
 
     //STA
@@ -115,6 +172,8 @@ bool ArduinoOS_wifi::config(u8 s){
             WiFi.config(wifiIp,wifiGateway,wifiSubnet,wifiDns);
         }
         WiFi.begin((const char*)sta_network.c_str(),(const char*)sta_password.c_str());
+        //conf.sta.scan_method = WIFI_ALL_CHANNEL_SCAN;
+        //conf.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
     };
 
     //AP
@@ -122,9 +181,6 @@ bool ArduinoOS_wifi::config(u8 s){
         WiFi.softAPConfig(IPAddress(192, 168, 100, 1), IPAddress(192, 168, 100, 1), IPAddress(255, 255, 255, 0));
         WiFi.softAP((const char*)hostname.c_str(),(const char*)ap_password.c_str());
     };
-
-    //ELSE
-    if(!sta_enable && !ap_enable) WiFi.mode(WIFI_OFF);  //Remove ??
 
     return true;
 };
@@ -135,38 +191,12 @@ inline s16 ArduinoOS_wifi::calcRSSI(s32 r){
     return min(max(2 * (r + 100.0), 0.0), 100.0);
 };
 
-//Telnet
-void ArduinoOS_wifi::telnetLoop(){
-  // Cleanup disconnected session
-  for(u8 i{0}; i < MAX_TELNET_CLIENTS; i++)
-    if (TelnetClient[i] && !TelnetClient[i].connected())
-        TelnetClient[i].stop();
-  // Check new client connections
-  if (TelnetServer->hasClient()){
-    for(u8 i{0}; i < MAX_TELNET_CLIENTS; i++){
-      if (!TelnetClient[i]){
-        TelnetClient[i] = TelnetServer->available(); 
-        TelnetClient[i].flush();
-        o(0x07,false);
-        p(textEscClear);
-        p(textWelcome);
-        commandList();             //Unfify with Serial ??
-        terminalPrefix();
-        clearBuffer();
-        break;
-      };
-    };
-  };
-  //Get Message
-  for(u8 i{0}; i < MAX_TELNET_CLIENTS; i++)
-    if (TelnetClient[i] && TelnetClient[i].connected())
-        while(TelnetClient[i].available())
-            charIn(TelnetClient[i].read(),false);
-};
 void ArduinoOS_wifi::telnetOut(void* value){
-    for(u8 i{0}; i < MAX_TELNET_CLIENTS; i++)
-        if (TelnetClient[i] || TelnetClient[i].connected())
-            TelnetClient[i].print((char*)value);
+    if(TelnetServer && telnet_enable){
+        for(u8 i{0}; i < MAX_TELNET_CLIENTS; i++)
+            if (TelnetClient[i] || TelnetClient[i].connected())
+                TelnetClient[i].print((char*)value);
+    }
 };
 
 //Interface Methods
@@ -217,6 +247,7 @@ ArduinoOS_wifi::ArduinoOS_wifi():ArduinoOS(){
         snprintf(OUT,LONG,"%-20s : %s","Connected",connected()?"true":"false");o(OUT);
         snprintf(OUT,LONG,"%-20s : %s","Hostname",hostname.c_str());o(OUT);
         snprintf(OUT,LONG,"%-20s : %s","LocalMAC",WiFi.macAddress().c_str());o(OUT);
+        snprintf(OUT,LONG,"%-20s : %s","BSSID",WiFi.BSSIDstr().c_str());o(OUT);
         snprintf(OUT,LONG,"%-20s : %d.%d.%d.%d","LocalIP",localIP[0],localIP[1],localIP[2],localIP[3]);o(OUT);
         snprintf(OUT,LONG,"%-20s : %d.%d.%d.%d","SubnetMask",subnetMask[0],subnetMask[1],subnetMask[2],subnetMask[3]);o(OUT);
         snprintf(OUT,LONG,"%-20s : %d.%d.%d.%d","GatewayIP",gatewayIP[0],gatewayIP[1],gatewayIP[2],gatewayIP[3]);o(OUT);
@@ -224,7 +255,7 @@ ArduinoOS_wifi::ArduinoOS_wifi():ArduinoOS(){
         snprintf(OUT,LONG,"%-20s : %s","AP MAC",WiFi.softAPmacAddress().c_str());o(OUT);
         snprintf(OUT,LONG,"%-20s : %d.%d.%d.%d","AP IP",apIP[0],apIP[1],apIP[2],apIP[3]);o(OUT);
         snprintf(OUT,LONG,"%-20s : %d","AP Stations",WiFi.softAPgetStationNum());o(OUT);
-        snprintf(OUT,LONG,"%-20s : %s","NTP Time",timeClient.getFormattedTime().c_str());o(OUT);
+        if(timeClient) snprintf(OUT,LONG,"%-20s : %s","NTP Time",timeClient->getFormattedTime().c_str());o(OUT);
     },  "📶 Shows System / Wifi status");
     
     #if defined ESP8266
@@ -309,7 +340,7 @@ ArduinoOS_wifi::ArduinoOS_wifi():ArduinoOS(){
                     case 6: e = "AUTH_MAX";break;
                     default:e = "UNKOWN";
                 }
-                snprintf(OUT,LONG,"%-20s : %d dBm (%d%%) (%s)",WiFi.SSID(i).c_str(),WiFi.RSSI(i), calcRSSI(WiFi.RSSI(i)),e);o(OUT);
+                snprintf(OUT,LONG,"%-20s : %d dBm (%d%%) (%s) BSSID: %s",WiFi.SSID(i).c_str(),WiFi.RSSI(i), calcRSSI(WiFi.RSSI(i)),e,WiFi.BSSIDstr(i).c_str());o(OUT);
             }
         }else o("❌ No Networks found!");
     },    "📶 Scans for nearby networks");

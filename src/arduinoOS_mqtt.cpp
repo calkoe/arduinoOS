@@ -20,75 +20,96 @@ String                  ArduinoOS_mqtt::mqtt_password{};
 
 void ArduinoOS_mqtt::begin(){
     ArduinoOS_wifi::begin();
-    config(0);
-    //LOOP 1000ms
-    setInterval([](){
-        if(mqtt_enable && ArduinoOS::status == 2 &&  mqtt->connected()) ArduinoOS::status = 5; 
-        if(mqtt_enable && ArduinoOS::status == 5 && !mqtt->connected()) ArduinoOS::status = 2; 
-        if(mqtt_enable && mqtt_server){
+    connect(false);
+    // DAEMON 5ms
+    #if defined ESP8266
+        setInterval([](){
+            daemon();
+        },5,"mqttDaemon");
+    #endif
+    #if defined ESP32 
+        xTaskCreatePinnedToCore([](void* arg){
+            while(true){
+                ArduinoOS_mqtt::daemon();
+                vTaskDelay(5);
+            }
+        }, "mqttDaemon", 4096, NULL, 1, NULL, 1);
+    #endif
+};
+
+void ArduinoOS_mqtt::loop(){
+    ArduinoOS_wifi::loop();
+};
+
+void ArduinoOS_mqtt::daemon(){
+    if(mqtt && mqtt_enable){
+        if(ArduinoOS::status == 2 &&  mqtt->connected()) ArduinoOS::status = 5; 
+        if(ArduinoOS::status == 5 && !mqtt->connected()) ArduinoOS::status = 2; 
+        if(mqtt_server){
             if(mqtt->connected() && !mqtt_connected){
                 mqtt_connected = true;
+                eventEmit("mqttConnected",NULL);
                 SUB* t = sub;
                 while(t){
                     mqtt->subscribe(t->topic,t->qos);
                     t = t->sub;
                 }
             }
-            if(!mqtt->connected() && ArduinoOS_wifi::connected()){ 
+            if(!mqtt->connected() && mqtt_connected){
                 mqtt_connected = false;
-                mqtt->connect(hostname.c_str(),mqtt_user.c_str(),mqtt_password.c_str());
+                eventEmit("mqttDisconnected",NULL);
+            }
+            if(!mqtt_connected && ArduinoOS_wifi::connected()){ 
+                connect(true);
             };
         }
-    },1000,"mqttStatus");
-    //LOOP 5ms
-    setInterval([](){
-        if(mqtt_enable) mqtt->loop();
-    },5,"mqttLoop");
-};
-void ArduinoOS_mqtt::loop(){
-    ArduinoOS_wifi::loop();
+        mqtt->loop();
+    }
 };
 
 //Methods
-bool ArduinoOS_mqtt::config(u8 s){
+void ArduinoOS_mqtt::connect(bool blocking){
     if(mqtt)        delete mqtt;
     if(net)         delete net;
     if(netSecure)   delete netSecure;
-    mqtt = new MQTTClient;
-    if(mqtt_enable && mqtt_server){
-        mqtt->setOptions(60, true, 2000);
+    if(mqtt_enable && mqtt_server && mqtt_port){
+        mqtt = new MQTTClient;
+        mqtt->setOptions(60, true, 5000);
         mqtt->onMessageAdvanced(handle);
         if(mqtt_tls){
             netSecure = new WiFiClientSecure;
-            netSecure->setTimeout(2000);
+            netSecure->setTimeout(5000);
             #if defined ESP8266
                 if(!mqtt_tlsVerify) netSecure->setInsecure();
             #endif
             mqtt->begin(mqtt_server.c_str(),mqtt_port,*netSecure);
         }else{
             net = new WiFiClient;
-            net->setTimeout(2000);
+            net->setTimeout(5000);
             mqtt->begin(mqtt_server.c_str(),mqtt_port,*net);
         };
+        if(blocking){
+            eventEmit("mqttConnecting",NULL);
+            mqtt->connect(hostname.c_str(),mqtt_user.c_str(),mqtt_password.c_str());
+        }
     }
-    return true;
 };
 void ArduinoOS_mqtt::publish(char* topic, char* payload, bool retained, u8 qos){
-    if(isBegin) mqtt->publish(topic,payload,retained,qos);
+    if(mqtt) mqtt->publish(topic,payload,retained,qos);
     yield();
 };
 void ArduinoOS_mqtt::publish(String& topic, String& payload, bool retained, u8 qos){
-    if(isBegin) mqtt->publish(topic,payload,retained,qos);
+    if(mqtt) mqtt->publish(topic,payload,retained,qos);
     yield();
 };
 void ArduinoOS_mqtt::subscripe(char* topic,u8 qos,void (*function)(char*,char*)){
-    if(isBegin && mqtt->connected()) mqtt->subscribe(topic,qos);
+    if(mqtt && mqtt->connected()) mqtt->subscribe(topic,qos);
     SUB* b = new SUB{topic,qos,function,sub};
     sub = b;
     yield();
 };
 void ArduinoOS_mqtt::unsubscripe(char* topic){
-    if(isBegin && mqtt->connected()) mqtt->unsubscribe(topic);
+    if(mqtt && mqtt->connected()) mqtt->unsubscribe(topic);
     SUB* t = sub;
     SUB* l = sub;
     while(t){
@@ -118,7 +139,7 @@ void ArduinoOS_mqtt::handle(MQTTClient *client, char* topic, char* payload, s16 
 };
 
 bool ArduinoOS_mqtt::connected(){
-    return (mqtt_enable && mqtt_server && mqtt->connected());
+    return (mqtt && mqtt_enable && mqtt->connected());
 }
 
 
@@ -134,6 +155,10 @@ ArduinoOS_mqtt::ArduinoOS_mqtt():ArduinoOS_wifi(){
     variableAdd("mqtt/user",        mqtt_user           ,           "📡 Username");
     variableAdd("mqtt/password",    mqtt_password       ,           "📡 Password");
     commandAdd("mqttStatus",[](char** param,u8 parCnt){
+        if(!mqtt || !mqtt_enable){
+            o("");o("📡 MQTT Disabled!");
+            return;
+        }
         o("");o("📡 MQTT:");
         const char* m{""};
         switch(mqtt->lastError()){
@@ -183,25 +208,29 @@ ArduinoOS_mqtt::ArduinoOS_mqtt():ArduinoOS_wifi(){
         if(parCnt>=2){
                 snprintf(OUT,LONG,"Set  mqtt/enabled: %s","true");o(OUT);
                 mqtt_enable  = true;
-                snprintf(OUT,LONG,"Set  mqtt/mqtt_server: %s",param[1]);o(OUT);
-                variableSet("mqtt/mqtt_server",param[1]);
+                snprintf(OUT,LONG,"Set  mqtt/server: %s",param[1]);o(OUT);
+                variableSet("mqtt/server",param[1]);
         };
         if(parCnt>=3){
-                snprintf(OUT,LONG,"Set mqtt/mqtt_port: %s",param[2]);o(OUT);
-                variableSet("mqtt/mqtt_port",param[2]);
+                snprintf(OUT,LONG,"Set mqtt/port: %s",param[2]);o(OUT);
+                variableSet("mqtt/port",param[2]);
         };
         if(parCnt>=4){
-                snprintf(OUT,LONG,"Set mqtt/mqtt_user: %s",param[2]);o(OUT);
-                variableSet("mqtt/mqtt_user",param[3]);
+                snprintf(OUT,LONG,"Set mqtt/user: %s",param[3]);o(OUT);
+                variableSet("mqtt/user",param[3]);
         };
         if(parCnt>=5){
-                snprintf(OUT,LONG,"Set mqtt/mqtt_password: %s",param[2]);o(OUT);
-                variableSet("mqtt/mqtt_password",param[4]);
+                snprintf(OUT,LONG,"Set mqtt/password: %s",param[4]);o(OUT);
+                variableSet("mqtt/password",param[4]);
+        };
+        if(parCnt==6){
+                snprintf(OUT,LONG,"Set mqtt/tls: %s",param[5]);o(OUT);
+                variableSet("mqtt/tls",param[5]);
         };
         variableLoad(true);
         o("DONE! ✅ > Type 'mqttStatus' to check status");
-        config(1);
-    }, "📡 [mqtt_server] [mqtt_port] [mqtt_user] [mqtt_password] | Apply mqtt settings and connect to configured mqtt_server",false);
+        connect(false);
+    }, "📡 [mqtt_server] [mqtt_port] [mqtt_user] [mqtt_password] [tls] | Apply mqtt settings and connect to configured mqtt_server",false);
 
     commandAdd("mqttPublish",[](char** param,u8 parCnt){
         if(parCnt>=3){

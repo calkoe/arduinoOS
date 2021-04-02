@@ -4,6 +4,7 @@
 #if defined ESP8266
     #include <ESP8266WiFi.h> 
     #include <ESP8266httpUpdate.h>
+    #define MAX_TELNET_CLIENTS 1
 #endif
 
 #if defined ESP32
@@ -12,14 +13,13 @@
     #include <WiFiClientSecure.h> 
     #include <HTTPUpdate.h>
     #include <Update.h>
+    #define MAX_TELNET_CLIENTS 4
 #endif
 
 #include "arduinoOS.h"
 #include <WiFiUdp.h>
 #include <NTPClient.h>
 #include <DNSServer.h>
-
-#define MAX_TELNET_CLIENTS 2
 
 class ArduinoOS_wifi : public ArduinoOS{
 
@@ -30,15 +30,16 @@ class ArduinoOS_wifi : public ArduinoOS{
         static s16  calcRSSI(s32);
 
         //NTP
-        static WiFiUDP   wifiUDP;
-        static NTPClient timeClient;
+        static WiFiUDP*     timeClientUDP;
+        static NTPClient*   timeClient;
 
         //Telnet
-        static void telnetLoop();
         static void telnetOut(void*);
         static WiFiServer* TelnetServer;
         static WiFiClient* TelnetClient;
-        
+
+        static void daemon();
+
     protected:
 
     public:

@@ -29,11 +29,14 @@ String                  ArduinoOS::password{"aos"};
 String                  ArduinoOS::firmware{"-"};
 
 void ArduinoOS::begin(){
+    #if defined ESP32
+        vTaskPrioritySet(NULL, 3);
+    #endif
     //LOOP 180ms
     if(statusLed>=0){
         setInterval([](){
             if(!status)          digitalWrite(statusLed,!digitalRead(statusLed));
-            else if(status==5)   digitalWrite(statusLed,0);
+            else if(status==5)   digitalWrite(statusLed,STATUSLEDON);
             else{
                 static bool o{1};
                 static u8 p{0};
@@ -87,6 +90,7 @@ void ArduinoOS::loop(){
     #endif
     #if defined(ESP32)
        if(watchdog) esp_task_wdt_reset(); 
+       vTaskDelay(5);
     #endif
     taskLoop();
 };

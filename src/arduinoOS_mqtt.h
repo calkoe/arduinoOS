@@ -20,9 +20,10 @@ class ArduinoOS_mqtt : public ArduinoOS_wifi{
         static SUB* sub;
 
         //Methods
-        static bool config(u8);
+        static void connect(bool);
         static void handle(MQTTClient*, char*, char*, s16);
-        
+        static void daemon();
+                
     protected:
 
     public:

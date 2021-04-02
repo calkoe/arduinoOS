@@ -17,6 +17,7 @@
     #define LONG                64      //IO Buffer
     #define SERSPEED            9600 
     #define STATUSLED           LED_BUILTIN
+    #define STATUSLEDON         0
     #define BOOTBUTTON          0
 
 #endif
@@ -28,6 +29,7 @@
     #define LONG                128     //BufferIn, BufferOut, TerminalHistory
     #define SERSPEED            115200 
     #define STATUSLED           16
+    #define STATUSLEDON         0
     #define BOOTBUTTON          0
     #define EEPROM_SIZE         1024    //Only for ESP
 #endif
@@ -36,10 +38,12 @@
     #include <EEPROM.h>
     #include <ESP.h>
     #include <esp_task_wdt.h>
+    #include "esp_wifi.h"
     #define SHORT               128     //Programm Parameter, Parameter Count
     #define LONG                128     //BufferIn, BufferOut, TerminalHistory
     #define SERSPEED            115200 
     #define STATUSLED           2
+    #define STATUSLEDON         1
     #define BOOTBUTTON          0
     #define EEPROM_SIZE         1024    //Only for ESP
 #endif
