@@ -20,6 +20,10 @@ String                  ArduinoOS_mqtt::mqtt_user{};
 String                  ArduinoOS_mqtt::mqtt_password{};
 u16                     ArduinoOS_mqtt::mqtt_retryIntervall{5000};
 
+#if defined ESP32 
+    SemaphoreHandle_t xBinarySemaphore;
+#endif
+
 void ArduinoOS_mqtt::begin(){
     ArduinoOS_wifi::begin();
     // DAEMON 5ms
@@ -31,7 +35,9 @@ void ArduinoOS_mqtt::begin(){
     #if defined ESP32 
         xTaskCreatePinnedToCore([](void* arg){
             while(true){
+                xSemaphoreTake( xBinarySemaphore, portMAX_DELAY );
                 ArduinoOS_mqtt::daemon();
+                xSemaphoreGive( xBinarySemaphore );
                 vTaskDelay(5);
             }
         }, "mqttDaemon", 4096, NULL, 1, NULL, 1);
@@ -155,6 +161,12 @@ void ArduinoOS_mqtt::disconnect(){
 }
 
 ArduinoOS_mqtt::ArduinoOS_mqtt():ArduinoOS_wifi(){
+
+    #if defined ESP32 
+    xBinarySemaphore = xSemaphoreCreateBinary();
+    xSemaphoreGive( xBinarySemaphore );
+    #endif
+
     variableAdd("mqtt/enable",      mqtt_enable         ,           "📡 mqtt_enable MQTT");
     variableAdd("mqtt/server",      mqtt_server         ,           "📡 MQTT mqtt_server IP or Name");
     variableAdd("mqtt/port",        mqtt_port           ,           "📡 MQTT mqtt_server Port");
@@ -216,6 +228,10 @@ ArduinoOS_mqtt::ArduinoOS_mqtt():ArduinoOS_wifi(){
     },"📡 Shows System / Wifi / MQTT status",false);
 
     commandAdd("mqttConnect",[](char** param,u8 parCnt){
+        #if defined ESP32 
+            xSemaphoreTake( xBinarySemaphore, portMAX_DELAY );
+        #endif
+
         if(parCnt>=2){
                 snprintf(OUT,LONG,"Set  mqtt/enable: %s","true");o(OUT);
                 variableSet("mqtt/enabled",(char*)"1");
@@ -249,6 +265,11 @@ ArduinoOS_mqtt::ArduinoOS_mqtt():ArduinoOS_wifi(){
             delete mqtt;
             mqtt = nullptr;
         }   
+
+        #if defined ESP32 
+            xSemaphoreGive( xBinarySemaphore );
+        #endif
+
     }, "📡 [mqtt_server] [mqtt_port] [mqtt_user] [mqtt_password] [tls] | Apply mqtt settings and connect to configured mqtt_server",false);
 
     commandAdd("mqttPublish",[](char** param,u8 parCnt){

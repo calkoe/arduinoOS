@@ -18,13 +18,12 @@ class ArduinoOS_mqtt : public ArduinoOS_wifi{
             SUB*        sub;
         };
         static SUB* sub;
+        static bool retry;
 
         //Methods
         static void configMqtt();
         static void handle(MQTTClient*, char*, char*, s16);
         static void daemon();
-
-        static bool retry;
                 
     protected:
 
