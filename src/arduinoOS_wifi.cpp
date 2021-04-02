@@ -139,7 +139,7 @@ bool ArduinoOS_wifi::config(u8 s){
     } 
     if(TelnetClient){
         for(u8 i{0}; i < MAX_TELNET_CLIENTS; i++)  
-            TelnetClient[i].stopAll();  
+            TelnetClient[i].stop();  
         delete[] TelnetClient;    
         TelnetClient = nullptr;  
     } 

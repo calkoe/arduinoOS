@@ -76,12 +76,12 @@ void ArduinoOS_mqtt::configMqtt(){
             mqtt = nullptr;
         }        
         if(net){
-            net->stopAll();
+            net->stop();
             delete net;
             net = nullptr;
         } 
         if(netSecure){
-            netSecure->stopAll();
+            netSecure->stop();
             delete netSecure;
             netSecure = nullptr;
         }    
