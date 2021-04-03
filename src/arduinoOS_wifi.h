@@ -41,6 +41,7 @@ class ArduinoOS_wifi : public ArduinoOS{
         #endif
 
         static void wifi_daemon();
+        static bool wifi_config(u8);
 
     protected:
 
@@ -50,7 +51,6 @@ class ArduinoOS_wifi : public ArduinoOS{
         ArduinoOS_wifi();
         static void begin();
         static void loop();
-        static bool wifi_config(u8);
 
         //API
         static bool   telnet_enable;

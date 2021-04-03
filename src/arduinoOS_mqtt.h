@@ -26,6 +26,7 @@ class ArduinoOS_mqtt : public ArduinoOS_wifi{
         //Methods
         static void handle(MQTTClient*, char*, char*, s16);
         static void mqtt_daemon();
+        static void mqtt_config();
                 
     protected:
 
@@ -35,7 +36,6 @@ class ArduinoOS_mqtt : public ArduinoOS_wifi{
         ArduinoOS_mqtt();
         static void begin();
         static void loop();
-        static void mqtt_config();
 
 
         //API MQTT

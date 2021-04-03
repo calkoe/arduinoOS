@@ -18,7 +18,7 @@ String                  ArduinoOS_mqtt::mqtt_certificate;
 String                  ArduinoOS_mqtt::mqtt_privateKey;
 String                  ArduinoOS_mqtt::mqtt_user{};
 String                  ArduinoOS_mqtt::mqtt_password{};
-u16                     ArduinoOS_mqtt::mqtt_retryIntervall{5000};
+u16                     ArduinoOS_mqtt::mqtt_retryIntervall{6000};
 #if defined ESP32 
       SemaphoreHandle_t ArduinoOS_mqtt::xBinarySemaphore;
 #endif
@@ -64,8 +64,8 @@ void ArduinoOS_mqtt::mqtt_daemon(){
                     t = t->sub;
                 }
             }
-            mqtt_config();
         }
+        if(!mqtt->connected()) mqtt_config();
         mqtt->loop();
     }else{
         mqtt_config();
